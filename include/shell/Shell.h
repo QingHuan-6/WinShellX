@@ -2,6 +2,7 @@
 
 #include "shell/CommandRegistry.h"
 #include "shell/ExternalCommandRunner.h"
+#include "shell/AliasStore.h"
 #include "shell/HistoryStore.h"
 #include "shell/LineEditor.h"
 #include "shell/ShellContext.h"
@@ -19,11 +20,14 @@ private:
         const std::string& input,
         const std::string* stdinText,
         std::string* capturedOutput,
-        const std::string& outputFilePath);
+        const std::string& outputFilePath,
+        bool background = false);
+    std::string expandAlias(const std::string& input) const;
 
     ShellContext context_;
     CommandRegistry registry_;
     ExternalCommandRunner externalCommandRunner_;
+    AliasStore aliasStore_;
     HistoryStore historyStore_;
     LineEditor lineEditor_;
 };

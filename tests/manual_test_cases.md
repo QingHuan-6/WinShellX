@@ -66,3 +66,15 @@
 | Redirect external output | `cmd /c echo hello > out.txt` | `out.txt` contains `hello` |
 | Pipe internal to external | `dir | find "cpp"` | Only lines containing `cpp` are printed |
 | Pipe then redirect | `dir | find "cpp" > result.txt` | `result.txt` contains filtered output |
+
+## Aliases, Background Jobs, and Colors
+
+| Case | Input | Expected Result |
+| --- | --- | --- |
+| Create alias | `alias ll=dir` | Alias is stored |
+| Use alias | `ll` | Runs `dir` |
+| List aliases | `alias` | Shows `ll=dir` |
+| Remove alias | `unalias ll` | Alias is removed |
+| Persist alias | Restart WinShellX, then run `alias` | Saved aliases are loaded |
+| Background external command | `notepad &` | Shows background PID and prompt returns immediately |
+| Colored prompt/help | `help`, `dir` | Prompt, help title, and directories use colors |

@@ -1,6 +1,7 @@
 #include "shell/LineEditor.h"
 
 #include "shell/CompletionProvider.h"
+#include "utils/ConsoleStyle.h"
 
 #include <windows.h>
 
@@ -183,13 +184,16 @@ void LineEditor::renderInput(const std::string& prompt, const std::string& input
     }
 
     std::cout << "\r" << std::string(120, ' ') << "\r";
-    std::cout << prompt << input;
+    ConsoleStyle::writePrompt(prompt);
+    std::cout << input;
 
     if (!hint.empty() && hint.size() > input.size()) {
         setColor(outputHandle, FOREGROUND_INTENSITY);
         std::cout << hint.substr(input.size());
         setColor(outputHandle, oldAttributes);
-        std::cout << "\r" << prompt << input;
+        std::cout << "\r";
+        ConsoleStyle::writePrompt(prompt);
+        std::cout << input;
     }
 
     std::cout.flush();

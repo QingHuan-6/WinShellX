@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(WinShellX
     src/main.cpp
     src/shell/Shell.cpp
+    src/shell/AliasStore.cpp
     src/shell/CompletionProvider.cpp
     src/shell/ExternalCommandRunner.cpp
     src/shell/HistoryStore.cpp
@@ -19,6 +20,7 @@ add_executable(WinShellX
     src/utils/StringUtils.cpp
     src/utils/PathUtils.cpp
     src/utils/WinApiError.cpp
+    src/utils/ConsoleStyle.cpp
 )
 
 target_include_directories(WinShellX PRIVATE include)

@@ -6,6 +6,7 @@ struct ExternalRunOptions {
     const std::string* stdinText = nullptr;
     std::string* capturedOutput = nullptr;
     std::string outputFilePath;
+    bool waitForExit = true;
 };
 
 class ExternalCommandRunner {

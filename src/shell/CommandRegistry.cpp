@@ -1,5 +1,6 @@
 #include "shell/CommandRegistry.h"
 
+#include "utils/ConsoleStyle.h"
 #include "utils/StringUtils.h"
 
 #include <iomanip>
@@ -24,7 +25,7 @@ std::vector<std::string> CommandRegistry::names() const {
 }
 
 void CommandRegistry::printHelp() const {
-    std::cout << "WinShellX commands:\n";
+    ConsoleStyle::writeInfo("WinShellX commands:\n");
     for (const auto& item : commands_) {
         std::cout << "  " << std::left << std::setw(18) << item.second.usage
                   << item.second.description << "\n";

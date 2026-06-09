@@ -1,6 +1,7 @@
 #include "commands/BuiltInCommands.h"
 
 #include "utils/PathUtils.h"
+#include "utils/ConsoleStyle.h"
 #include "utils/StringUtils.h"
 #include "utils/WinApiError.h"
 
@@ -71,7 +72,13 @@ static void commandDir(ShellContext&, const std::vector<std::string>& args) {
             std::cout << std::setw(12) << size.QuadPart;
         }
 
-        std::cout << "  " << data.cFileName << "\n";
+        std::cout << "  ";
+        if (isDir) {
+            ConsoleStyle::writeDirectoryName(data.cFileName);
+            std::cout << "\n";
+        } else {
+            std::cout << data.cFileName << "\n";
+        }
     } while (FindNextFileA(handle, &data));
 
     FindClose(handle);
@@ -89,6 +96,57 @@ static void commandHistory(ShellContext& context, const std::vector<std::string>
 
 static void commandExit(ShellContext& context, const std::vector<std::string>&) {
     context.running = false;
+}
+
+static void commandAlias(ShellContext& context, const std::vector<std::string>& args) {
+    if (args.empty()) {
+        if (context.aliases.empty()) {
+            std::cout << "No aliases defined.\n";
+            return;
+        }
+
+        for (const auto& item : context.aliases) {
+            std::cout << item.first << "=" << item.second << "\n";
+        }
+        return;
+    }
+
+    std::string definition = joinArgs(args);
+    size_t equals = definition.find('=');
+    if (equals == std::string::npos) {
+        auto it = context.aliases.find(definition);
+        if (it == context.aliases.end()) {
+            std::cerr << "Alias not found: " << definition << "\n";
+            return;
+        }
+        std::cout << it->first << "=" << it->second << "\n";
+        return;
+    }
+
+    std::string name = trim(definition.substr(0, equals));
+    std::string value = trim(definition.substr(equals + 1));
+    if (name.empty() || value.empty()) {
+        std::cerr << "Usage: alias name=command\n";
+        return;
+    }
+
+    context.aliases[name] = value;
+    ConsoleStyle::writeSuccess("Alias set: " + name + "=" + value + "\n");
+}
+
+static void commandUnalias(ShellContext& context, const std::vector<std::string>& args) {
+    if (args.size() != 1) {
+        std::cerr << "Usage: unalias <name>\n";
+        return;
+    }
+
+    size_t removed = context.aliases.erase(args[0]);
+    if (removed == 0) {
+        std::cerr << "Alias not found: " << args[0] << "\n";
+        return;
+    }
+
+    ConsoleStyle::writeSuccess("Alias removed: " + args[0] + "\n");
 }
 
 static void commandCls(ShellContext&, const std::vector<std::string>&) {
@@ -192,6 +250,7 @@ static void commandTaskKill(ShellContext&, const std::vector<std::string>& args)
 }
 
 void registerBuiltInCommands(CommandRegistry& registry) {
+    registry.add("alias", {"alias [name=command]", "Create or list command aliases", commandAlias});
     registry.add("cd", {"cd <path>", "Change current directory", commandCd});
     registry.add("cls", {"cls", "Clear console screen", commandCls});
     registry.add("dir", {"dir [path]", "List files and directories", commandDir});
@@ -199,6 +258,7 @@ void registerBuiltInCommands(CommandRegistry& registry) {
     registry.add("exit", {"exit", "Exit WinShellX", commandExit});
     registry.add("tasklist", {"tasklist", "List running processes", commandTaskList});
     registry.add("taskkill", {"taskkill <pid>", "Terminate process by PID", commandTaskKill});
+    registry.add("unalias", {"unalias <name>", "Remove command alias", commandUnalias});
     registry.add("help", {"help", "Show command help", [&registry](ShellContext&, const std::vector<std::string>&) {
         registry.printHelp();
     }});

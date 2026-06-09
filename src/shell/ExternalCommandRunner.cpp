@@ -1,5 +1,6 @@
 #include "shell/ExternalCommandRunner.h"
 
+#include "utils/ConsoleStyle.h"
 #include "utils/WinApiError.h"
 
 #include <windows.h>
@@ -381,9 +382,17 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
         closeIfValid(stdinWrite);
     }
 
-    WaitForSingleObject(processInfo.hProcess, INFINITE);
-    if (reader.joinable()) {
-        reader.join();
+    if (options.waitForExit) {
+        WaitForSingleObject(processInfo.hProcess, INFINITE);
+        if (reader.joinable()) {
+            reader.join();
+        }
+    } else {
+        ConsoleStyle::writeSuccess("Started background process, PID: " +
+                                   std::to_string(processInfo.dwProcessId) + "\n");
+        if (reader.joinable()) {
+            reader.detach();
+        }
     }
 
     closeIfValid(stdoutRead);
