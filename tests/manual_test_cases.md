@@ -5,6 +5,7 @@
 | Case | Input | Expected Result |
 | --- | --- | --- |
 | Show help | `help` | Lists all built-in commands |
+| Clear screen | `cls` | Console content is cleared and prompt returns to top |
 | Empty input | Press Enter | Shows next prompt without error |
 | Unknown command | `abc` | Prints unknown command error |
 | Exit shell | `exit` | Program exits normally |

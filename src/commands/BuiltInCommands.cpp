@@ -91,6 +91,36 @@ static void commandExit(ShellContext& context, const std::vector<std::string>&) 
     context.running = false;
 }
 
+static void commandCls(ShellContext&, const std::vector<std::string>&) {
+    HANDLE outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (outputHandle == INVALID_HANDLE_VALUE) {
+        std::cerr << "cls failed: invalid console handle\n";
+        return;
+    }
+
+    CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
+    if (!GetConsoleScreenBufferInfo(outputHandle, &bufferInfo)) {
+        std::cerr << "cls failed: " << getLastErrorMessage() << "\n";
+        return;
+    }
+
+    DWORD cellCount = static_cast<DWORD>(bufferInfo.dwSize.X) * static_cast<DWORD>(bufferInfo.dwSize.Y);
+    COORD home = {0, 0};
+    DWORD cellsWritten = 0;
+
+    if (!FillConsoleOutputCharacterA(outputHandle, ' ', cellCount, home, &cellsWritten)) {
+        std::cerr << "cls failed: " << getLastErrorMessage() << "\n";
+        return;
+    }
+
+    if (!FillConsoleOutputAttribute(outputHandle, bufferInfo.wAttributes, cellCount, home, &cellsWritten)) {
+        std::cerr << "cls failed: " << getLastErrorMessage() << "\n";
+        return;
+    }
+
+    SetConsoleCursorPosition(outputHandle, home);
+}
+
 static void commandTaskList(ShellContext&, const std::vector<std::string>&) {
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (snapshot == INVALID_HANDLE_VALUE) {
@@ -163,6 +193,7 @@ static void commandTaskKill(ShellContext&, const std::vector<std::string>& args)
 
 void registerBuiltInCommands(CommandRegistry& registry) {
     registry.add("cd", {"cd <path>", "Change current directory", commandCd});
+    registry.add("cls", {"cls", "Clear console screen", commandCls});
     registry.add("dir", {"dir [path]", "List files and directories", commandDir});
     registry.add("history", {"history", "Show command history", commandHistory});
     registry.add("exit", {"exit", "Exit WinShellX", commandExit});
