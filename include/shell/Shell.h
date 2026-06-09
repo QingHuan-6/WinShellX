@@ -1,6 +1,7 @@
 #pragma once
 
 #include "shell/CommandRegistry.h"
+#include "shell/ExternalCommandRunner.h"
 #include "shell/HistoryStore.h"
 #include "shell/LineEditor.h"
 #include "shell/ShellContext.h"
@@ -13,6 +14,7 @@ public:
 private:
     ShellContext context_;
     CommandRegistry registry_;
+    ExternalCommandRunner externalCommandRunner_;
     HistoryStore historyStore_;
     LineEditor lineEditor_;
 };

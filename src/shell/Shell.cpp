@@ -37,7 +37,7 @@ void Shell::run() {
         const CommandInfo* info = registry_.find(command.name);
 
         if (!info) {
-            std::cerr << "Unknown command: " << command.name << "\n";
+            externalCommandRunner_.run(input);
             continue;
         }
 

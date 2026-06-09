@@ -44,3 +44,12 @@
 | Missing PID | `taskkill` | Prints usage |
 | Invalid PID | `taskkill abc` | Prints invalid PID |
 | Nonexistent PID | `taskkill 999999999` | Prints OpenProcess error |
+
+## External Commands
+
+| Case | Input | Expected Result |
+| --- | --- | --- |
+| Start Notepad | `notepad` | Notepad starts, WinShellX continues after it exits |
+| Start Calculator | `calc` | Calculator starts, WinShellX continues after it exits |
+| Start program with argument | `notepad test.txt` | Notepad opens or creates `test.txt` |
+| Invalid external command | `not_a_real_program` | Prints CreateProcess error |

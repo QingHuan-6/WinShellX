@@ -10,6 +10,7 @@ add_executable(WinShellX
     src/main.cpp
     src/shell/Shell.cpp
     src/shell/CompletionProvider.cpp
+    src/shell/ExternalCommandRunner.cpp
     src/shell/HistoryStore.cpp
     src/shell/LineEditor.cpp
     src/shell/CommandParser.cpp
