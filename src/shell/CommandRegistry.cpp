@@ -15,6 +15,14 @@ const CommandInfo* CommandRegistry::find(const std::string& name) const {
     return it == commands_.end() ? nullptr : &it->second;
 }
 
+std::vector<std::string> CommandRegistry::names() const {
+    std::vector<std::string> result;
+    for (const auto& item : commands_) {
+        result.push_back(item.first);
+    }
+    return result;
+}
+
 void CommandRegistry::printHelp() const {
     std::cout << "WinShellX commands:\n";
     for (const auto& item : commands_) {

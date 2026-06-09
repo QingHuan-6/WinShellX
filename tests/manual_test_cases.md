@@ -30,6 +30,8 @@
 | Load history | Restart WinShellX, then run `history` | Previous session commands are shown |
 | History hint | Type `he` after running `help` before | The rest of `help` is shown as a hint |
 | Accept hint | Type `he`, then press `Tab` | The input becomes `help` |
+| Complete command name | Type `ta`, then press `Tab` | Input completes to a matching command prefix or command |
+| Complete path | Type `dir s`, then press `Tab` | Input completes from matching files or directories |
 | Choose recent history | Type a prefix, then press `F7` | Matching recent commands are listed |
 | Select history item | Press a number from the `F7` list | The selected command is filled into the input line |
 

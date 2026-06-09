@@ -1,5 +1,7 @@
 #include "shell/LineEditor.h"
 
+#include "shell/CompletionProvider.h"
+
 #include <windows.h>
 
 #include <algorithm>
@@ -22,7 +24,10 @@ void setColor(HANDLE console, WORD attributes) {
 }
 }
 
-std::string LineEditor::readLine(const std::string& prompt, const std::vector<std::string>& history) const {
+std::string LineEditor::readLine(
+    const std::string& prompt,
+    const std::vector<std::string>& history,
+    const std::vector<std::string>& commandNames) const {
     HANDLE inputHandle = GetStdHandle(STD_INPUT_HANDLE);
     DWORD oldMode = 0;
     bool hasConsoleMode = GetConsoleMode(inputHandle, &oldMode) != 0;
@@ -37,8 +42,9 @@ std::string LineEditor::readLine(const std::string& prompt, const std::vector<st
     rawMode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
     SetConsoleMode(inputHandle, rawMode);
 
+    CompletionProvider completionProvider(commandNames);
     std::string input;
-    renderInput(prompt, input, findHint(input, history));
+    renderInput(prompt, input, completionProvider.complete(input, history));
 
     while (true) {
         INPUT_RECORD record;
@@ -64,12 +70,12 @@ std::string LineEditor::readLine(const std::string& prompt, const std::vector<st
             if (!input.empty()) {
                 input.pop_back();
             }
-            renderInput(prompt, input, findHint(input, history));
+            renderInput(prompt, input, completionProvider.complete(input, history));
             continue;
         }
 
         if (key.wVirtualKeyCode == kTabKey) {
-            std::string hint = findHint(input, history);
+            std::string hint = completionProvider.complete(input, history);
             if (!hint.empty()) {
                 input = hint;
                 renderInput(prompt, input, "");
@@ -82,30 +88,16 @@ std::string LineEditor::readLine(const std::string& prompt, const std::vector<st
             if (!selected.empty()) {
                 input = selected;
             }
-            renderInput(prompt, input, findHint(input, history));
+            renderInput(prompt, input, completionProvider.complete(input, history));
             continue;
         }
 
         char ch = key.uChar.AsciiChar;
         if (ch >= 32 && ch <= 126) {
             input.push_back(ch);
-            renderInput(prompt, input, findHint(input, history));
+            renderInput(prompt, input, completionProvider.complete(input, history));
         }
     }
-}
-
-std::string LineEditor::findHint(const std::string& input, const std::vector<std::string>& history) const {
-    if (input.empty()) {
-        return "";
-    }
-
-    for (auto it = history.rbegin(); it != history.rend(); ++it) {
-        if (*it != input && startsWith(*it, input)) {
-            return *it;
-        }
-    }
-
-    return "";
 }
 
 std::string LineEditor::chooseRecentHistory(const std::string& input, const std::vector<std::string>& history) const {

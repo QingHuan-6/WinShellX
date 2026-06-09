@@ -17,12 +17,12 @@ Shell::Shell() : historyStore_(".winshellx_history") {
 void Shell::run() {
     std::cout << "WinShellX started. Type help for commands.\n";
     std::cout << "History loaded from " << context_.historyFilePath
-              << ". Press Tab to accept hint, F7 to choose recent history.\n";
+              << ". Tab completes history/commands/paths, F7 chooses recent history.\n";
 
     while (context_.running) {
         std::string prompt = getCurrentDirectoryText() + ">";
 
-        std::string input = lineEditor_.readLine(prompt, context_.history);
+        std::string input = lineEditor_.readLine(prompt, context_.history, registry_.names());
         if (!std::cin && input.empty()) {
             break;
         }
