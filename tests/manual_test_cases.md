@@ -52,4 +52,6 @@
 | Start Notepad | `notepad` | Notepad starts, WinShellX continues after it exits |
 | Start Calculator | `calc` | Calculator starts, WinShellX continues after it exits |
 | Start program with argument | `notepad test.txt` | Notepad opens or creates `test.txt` |
-| Invalid external command | `not_a_real_program` | Prints CreateProcess error |
+| Run through PATH search | `where cmd` | Finds `where` using PATH and PATHEXT |
+| Run batch command through cmd | `cmd /c echo ok` | Runs command interpreter and prints `ok` |
+| Invalid external command | `not_a_real_program` | Prints not recognized error |
