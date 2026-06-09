@@ -5,6 +5,7 @@
 #include <windows.h>
 
 #include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -27,10 +28,6 @@ std::string toLowerAscii(std::string value) {
         return static_cast<char>(std::tolower(ch));
     });
     return value;
-}
-
-bool startsQuoted(const std::string& value) {
-    return !value.empty() && value.front() == '"';
 }
 
 std::string quote(const std::string& value) {
@@ -143,6 +140,23 @@ bool isBatchFile(const std::string& path) {
             lower.substr(lower.size() - 4) == ".cmd");
 }
 
+std::string cmdExecutablePath() {
+    std::string comspec = getEnvironmentValue("ComSpec");
+    if (!comspec.empty() && fileExists(comspec)) {
+        return comspec;
+    }
+
+    char systemDirectory[MAX_PATH];
+    if (GetSystemDirectoryA(systemDirectory, MAX_PATH) > 0) {
+        std::string candidate = joinPath(systemDirectory, "cmd.exe");
+        if (fileExists(candidate)) {
+            return candidate;
+        }
+    }
+
+    return "cmd.exe";
+}
+
 std::vector<std::string> executableNamesFromPathext(const std::string& executable) {
     if (hasExtension(executable)) {
         return {executable};
@@ -210,10 +224,12 @@ bool resolveCommand(const std::string& commandLine, ResolvedCommand& resolved) {
 
 std::string buildProcessCommandLine(const ResolvedCommand& command) {
     if (command.batchFile) {
-        std::string line = "cmd.exe /c " + quote(command.executablePath);
+        std::string line = quote(cmdExecutablePath()) + " /d /s /c \"";
+        line += quote(command.executablePath);
         if (!command.arguments.empty()) {
             line += " " + command.arguments;
         }
+        line += "\"";
         return line;
     }
 
@@ -225,7 +241,7 @@ std::string buildProcessCommandLine(const ResolvedCommand& command) {
 }
 
 std::string applicationNameFor(const ResolvedCommand& command) {
-    return command.batchFile ? "cmd.exe" : command.executablePath;
+    return command.batchFile ? cmdExecutablePath() : command.executablePath;
 }
 }
 
