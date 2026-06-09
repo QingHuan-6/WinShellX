@@ -13,6 +13,8 @@ constexpr WORD kEnterKey = VK_RETURN;
 constexpr WORD kBackspaceKey = VK_BACK;
 constexpr WORD kTabKey = VK_TAB;
 constexpr WORD kF7Key = VK_F7;
+constexpr WORD kUpKey = VK_UP;
+constexpr WORD kDownKey = VK_DOWN;
 constexpr size_t kMaxChoices = 9;
 
 bool startsWith(const std::string& value, const std::string& prefix) {
@@ -44,6 +46,8 @@ std::string LineEditor::readLine(
 
     CompletionProvider completionProvider(commandNames);
     std::string input;
+    std::string draftInput;
+    int historyIndex = -1;
     renderInput(prompt, input, completionProvider.complete(input, history));
 
     while (true) {
@@ -70,6 +74,7 @@ std::string LineEditor::readLine(
             if (!input.empty()) {
                 input.pop_back();
             }
+            historyIndex = -1;
             renderInput(prompt, input, completionProvider.complete(input, history));
             continue;
         }
@@ -78,7 +83,37 @@ std::string LineEditor::readLine(
             std::string hint = completionProvider.complete(input, history);
             if (!hint.empty()) {
                 input = hint;
+                historyIndex = -1;
                 renderInput(prompt, input, "");
+            }
+            continue;
+        }
+
+        if (key.wVirtualKeyCode == kUpKey) {
+            if (!history.empty()) {
+                if (historyIndex == -1) {
+                    draftInput = input;
+                    historyIndex = static_cast<int>(history.size());
+                }
+                if (historyIndex > 0) {
+                    --historyIndex;
+                    input = history[static_cast<size_t>(historyIndex)];
+                }
+                renderInput(prompt, input, completionProvider.complete(input, history));
+            }
+            continue;
+        }
+
+        if (key.wVirtualKeyCode == kDownKey) {
+            if (historyIndex != -1) {
+                ++historyIndex;
+                if (historyIndex >= static_cast<int>(history.size())) {
+                    historyIndex = -1;
+                    input = draftInput;
+                } else {
+                    input = history[static_cast<size_t>(historyIndex)];
+                }
+                renderInput(prompt, input, completionProvider.complete(input, history));
             }
             continue;
         }
@@ -87,6 +122,7 @@ std::string LineEditor::readLine(
             std::string selected = chooseRecentHistory(input, history);
             if (!selected.empty()) {
                 input = selected;
+                historyIndex = -1;
             }
             renderInput(prompt, input, completionProvider.complete(input, history));
             continue;
@@ -95,6 +131,7 @@ std::string LineEditor::readLine(
         char ch = key.uChar.AsciiChar;
         if (ch >= 32 && ch <= 126) {
             input.push_back(ch);
+            historyIndex = -1;
             renderInput(prompt, input, completionProvider.complete(input, history));
         }
     }

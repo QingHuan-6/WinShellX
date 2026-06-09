@@ -33,6 +33,8 @@
 | Accept hint | Type `he`, then press `Tab` | The input becomes `help` |
 | Complete command name | Type `ta`, then press `Tab` | Input completes to a matching command prefix or command |
 | Complete path | Type `dir s`, then press `Tab` | Input completes from matching files or directories |
+| Browse previous history | Press Up | Previous command is filled into the input line |
+| Browse next history | Press Down after Up | Next command or draft input is restored |
 | Choose recent history | Type a prefix, then press `F7` | Matching recent commands are listed |
 | Select history item | Press a number from the `F7` list | The selected command is filled into the input line |
 
@@ -55,3 +57,12 @@
 | Run through PATH search | `where cmd` | Finds `where` using PATH and PATHEXT |
 | Run batch command through cmd | `cmd /c echo ok` | Runs command interpreter and prints `ok` |
 | Invalid external command | `not_a_real_program` | Prints not recognized error |
+
+## Pipes and Redirection
+
+| Case | Input | Expected Result |
+| --- | --- | --- |
+| Redirect internal output | `dir > out.txt` | `out.txt` is created with directory output |
+| Redirect external output | `cmd /c echo hello > out.txt` | `out.txt` contains `hello` |
+| Pipe internal to external | `dir | find "cpp"` | Only lines containing `cpp` are printed |
+| Pipe then redirect | `dir | find "cpp" > result.txt` | `result.txt` contains filtered output |

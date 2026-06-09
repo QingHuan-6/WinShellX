@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace {
@@ -243,9 +244,26 @@ std::string buildProcessCommandLine(const ResolvedCommand& command) {
 std::string applicationNameFor(const ResolvedCommand& command) {
     return command.batchFile ? cmdExecutablePath() : command.executablePath;
 }
+
+void closeIfValid(HANDLE& handle) {
+    if (handle != nullptr && handle != INVALID_HANDLE_VALUE) {
+        CloseHandle(handle);
+        handle = nullptr;
+    }
 }
 
-bool ExternalCommandRunner::run(const std::string& commandLine) const {
+void appendFromPipe(HANDLE readHandle, std::string* output) {
+    char buffer[4096];
+    DWORD bytesRead = 0;
+    while (ReadFile(readHandle, buffer, sizeof(buffer), &bytesRead, nullptr) && bytesRead > 0) {
+        if (output) {
+            output->append(buffer, buffer + bytesRead);
+        }
+    }
+}
+}
+
+bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRunOptions& options) const {
     if (commandLine.empty()) {
         return false;
     }
@@ -262,18 +280,74 @@ bool ExternalCommandRunner::run(const std::string& commandLine) const {
     std::vector<char> mutableCommand(processCommandLine.begin(), processCommandLine.end());
     mutableCommand.push_back('\0');
 
+    SECURITY_ATTRIBUTES securityAttributes;
+    ZeroMemory(&securityAttributes, sizeof(securityAttributes));
+    securityAttributes.nLength = sizeof(securityAttributes);
+    securityAttributes.bInheritHandle = TRUE;
+
+    HANDLE stdinRead = nullptr;
+    HANDLE stdinWrite = nullptr;
+    HANDLE stdoutRead = nullptr;
+    HANDLE stdoutWrite = nullptr;
+    HANDLE outputFile = nullptr;
+
+    bool redirectInput = options.stdinText != nullptr;
+    bool captureOutput = options.capturedOutput != nullptr;
+    bool redirectOutputFile = !options.outputFilePath.empty();
+
+    if (redirectInput) {
+        if (!CreatePipe(&stdinRead, &stdinWrite, &securityAttributes, 0)) {
+            std::cerr << "CreatePipe failed: " << getLastErrorMessage() << "\n";
+            return false;
+        }
+        SetHandleInformation(stdinWrite, HANDLE_FLAG_INHERIT, 0);
+    }
+
+    if (captureOutput) {
+        if (!CreatePipe(&stdoutRead, &stdoutWrite, &securityAttributes, 0)) {
+            std::cerr << "CreatePipe failed: " << getLastErrorMessage() << "\n";
+            closeIfValid(stdinRead);
+            closeIfValid(stdinWrite);
+            return false;
+        }
+        SetHandleInformation(stdoutRead, HANDLE_FLAG_INHERIT, 0);
+    } else if (redirectOutputFile) {
+        outputFile = CreateFileA(
+            options.outputFilePath.c_str(),
+            GENERIC_WRITE,
+            FILE_SHARE_READ,
+            &securityAttributes,
+            CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr);
+        if (outputFile == INVALID_HANDLE_VALUE) {
+            std::cerr << "Could not open redirect file: " << getLastErrorMessage() << "\n";
+            closeIfValid(stdinRead);
+            closeIfValid(stdinWrite);
+            return false;
+        }
+    }
+
     STARTUPINFOA startupInfo;
     PROCESS_INFORMATION processInfo;
     ZeroMemory(&startupInfo, sizeof(startupInfo));
     ZeroMemory(&processInfo, sizeof(processInfo));
     startupInfo.cb = sizeof(startupInfo);
+    if (redirectInput || captureOutput || redirectOutputFile) {
+        startupInfo.dwFlags |= STARTF_USESTDHANDLES;
+        startupInfo.hStdInput = redirectInput ? stdinRead : GetStdHandle(STD_INPUT_HANDLE);
+        startupInfo.hStdOutput = captureOutput ? stdoutWrite
+                            : redirectOutputFile ? outputFile
+                                                 : GetStdHandle(STD_OUTPUT_HANDLE);
+        startupInfo.hStdError = startupInfo.hStdOutput;
+    }
 
     BOOL created = CreateProcessA(
         applicationName.c_str(),
         mutableCommand.data(),
         nullptr,
         nullptr,
-        FALSE,
+        (redirectInput || captureOutput || redirectOutputFile) ? TRUE : FALSE,
         0,
         nullptr,
         nullptr,
@@ -284,10 +358,36 @@ bool ExternalCommandRunner::run(const std::string& commandLine) const {
         std::cerr << "Failed to start external program: "
                   << resolved.executablePath << "\n";
         std::cerr << "CreateProcess failed: " << getLastErrorMessage() << "\n";
+        closeIfValid(stdinRead);
+        closeIfValid(stdinWrite);
+        closeIfValid(stdoutRead);
+        closeIfValid(stdoutWrite);
+        closeIfValid(outputFile);
         return false;
     }
 
+    closeIfValid(stdinRead);
+    closeIfValid(stdoutWrite);
+    closeIfValid(outputFile);
+
+    std::thread reader;
+    if (captureOutput) {
+        reader = std::thread(appendFromPipe, stdoutRead, options.capturedOutput);
+    }
+
+    if (redirectInput && options.stdinText) {
+        DWORD bytesWritten = 0;
+        WriteFile(stdinWrite, options.stdinText->data(), static_cast<DWORD>(options.stdinText->size()), &bytesWritten, nullptr);
+        closeIfValid(stdinWrite);
+    }
+
     WaitForSingleObject(processInfo.hProcess, INFINITE);
+    if (reader.joinable()) {
+        reader.join();
+    }
+
+    closeIfValid(stdoutRead);
+    closeIfValid(stdinWrite);
     CloseHandle(processInfo.hThread);
     CloseHandle(processInfo.hProcess);
     return true;
