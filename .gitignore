@@ -18,3 +18,5 @@ cmake_install.cmake
 *.sln
 *.vcxproj.user
 
+# WinShellX runtime state
+.winshellx_history

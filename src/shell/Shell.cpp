@@ -8,18 +8,22 @@
 #include <iostream>
 #include <string>
 
-Shell::Shell() {
+Shell::Shell() : historyStore_(".winshellx_history") {
+    context_.historyFilePath = historyStore_.filePath();
+    context_.history = historyStore_.load();
     registerBuiltInCommands(registry_);
 }
 
 void Shell::run() {
     std::cout << "WinShellX started. Type help for commands.\n";
+    std::cout << "History loaded from " << context_.historyFilePath
+              << ". Press Tab to accept hint, F7 to choose recent history.\n";
 
     while (context_.running) {
-        std::cout << getCurrentDirectoryText() << ">";
+        std::string prompt = getCurrentDirectoryText() + ">";
 
-        std::string input;
-        if (!std::getline(std::cin, input)) {
+        std::string input = lineEditor_.readLine(prompt, context_.history);
+        if (!std::cin && input.empty()) {
             break;
         }
 
@@ -39,4 +43,6 @@ void Shell::run() {
 
         info->handler(context_, command.args);
     }
+
+    historyStore_.save(context_.history);
 }

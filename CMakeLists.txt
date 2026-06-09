@@ -9,6 +9,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(WinShellX
     src/main.cpp
     src/shell/Shell.cpp
+    src/shell/HistoryStore.cpp
+    src/shell/LineEditor.cpp
     src/shell/CommandParser.cpp
     src/shell/CommandRegistry.cpp
     src/commands/BuiltInCommands.cpp
