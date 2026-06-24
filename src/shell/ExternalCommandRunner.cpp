@@ -271,8 +271,8 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
 
     ResolvedCommand resolved;
     if (!resolveCommand(commandLine, resolved)) {
-        std::cerr << "'" << splitCommandLine(commandLine).executable
-                  << "' is not recognized as an internal or external command.\n";
+        ConsoleStyle::writeError("'" + splitCommandLine(commandLine).executable
+                  + "' is not recognized as an internal or external command.\n");
         return false;
     }
 
@@ -298,7 +298,7 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
 
     if (redirectInput) {
         if (!CreatePipe(&stdinRead, &stdinWrite, &securityAttributes, 0)) {
-            std::cerr << "CreatePipe failed: " << getLastErrorMessage() << "\n";
+            ConsoleStyle::writeError("CreatePipe failed: " + getLastErrorMessage() + "\n");
             return false;
         }
         SetHandleInformation(stdinWrite, HANDLE_FLAG_INHERIT, 0);
@@ -306,7 +306,7 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
 
     if (captureOutput) {
         if (!CreatePipe(&stdoutRead, &stdoutWrite, &securityAttributes, 0)) {
-            std::cerr << "CreatePipe failed: " << getLastErrorMessage() << "\n";
+            ConsoleStyle::writeError("CreatePipe failed: " + getLastErrorMessage() + "\n");
             closeIfValid(stdinRead);
             closeIfValid(stdinWrite);
             return false;
@@ -322,7 +322,7 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
             FILE_ATTRIBUTE_NORMAL,
             nullptr);
         if (outputFile == INVALID_HANDLE_VALUE) {
-            std::cerr << "Could not open redirect file: " << getLastErrorMessage() << "\n";
+            ConsoleStyle::writeError("Could not open redirect file: " + getLastErrorMessage() + "\n");
             closeIfValid(stdinRead);
             closeIfValid(stdinWrite);
             return false;
@@ -356,9 +356,9 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
         &processInfo);
 
     if (!created) {
-        std::cerr << "Failed to start external program: "
-                  << resolved.executablePath << "\n";
-        std::cerr << "CreateProcess failed: " << getLastErrorMessage() << "\n";
+        ConsoleStyle::writeError("Failed to start external program: "
+                  + resolved.executablePath + "\n");
+        ConsoleStyle::writeError("CreateProcess failed: " + getLastErrorMessage() + "\n");
         closeIfValid(stdinRead);
         closeIfValid(stdinWrite);
         closeIfValid(stdoutRead);

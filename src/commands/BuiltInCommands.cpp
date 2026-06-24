@@ -23,7 +23,7 @@ static void commandCd(ShellContext&, const std::vector<std::string>& args) {
 
     std::string path = joinArgs(args);
     if (!SetCurrentDirectoryA(path.c_str())) {
-        std::cerr << "cd failed: " << getLastErrorMessage() << "\n";
+        ConsoleStyle::writeError("cd failed: " + getLastErrorMessage() + "\n");
     }
 }
 
@@ -34,7 +34,7 @@ static void commandDir(ShellContext&, const std::vector<std::string>& args) {
     WIN32_FIND_DATAA data;
     HANDLE handle = FindFirstFileA(pattern.c_str(), &data);
     if (handle == INVALID_HANDLE_VALUE) {
-        std::cerr << "dir failed: " << getLastErrorMessage() << "\n";
+        ConsoleStyle::writeError("dir failed: " + getLastErrorMessage() + "\n");
         return;
     }
 
@@ -116,7 +116,7 @@ static void commandAlias(ShellContext& context, const std::vector<std::string>& 
     if (equals == std::string::npos) {
         auto it = context.aliases.find(definition);
         if (it == context.aliases.end()) {
-            std::cerr << "Alias not found: " << definition << "\n";
+            ConsoleStyle::writeError("Alias not found: " + definition + "\n");
             return;
         }
         std::cout << it->first << "=" << it->second << "\n";
@@ -126,7 +126,7 @@ static void commandAlias(ShellContext& context, const std::vector<std::string>& 
     std::string name = trim(definition.substr(0, equals));
     std::string value = trim(definition.substr(equals + 1));
     if (name.empty() || value.empty()) {
-        std::cerr << "Usage: alias name=command\n";
+        ConsoleStyle::writeError("Usage: alias name=command\n");
         return;
     }
 
@@ -136,13 +136,13 @@ static void commandAlias(ShellContext& context, const std::vector<std::string>& 
 
 static void commandUnalias(ShellContext& context, const std::vector<std::string>& args) {
     if (args.size() != 1) {
-        std::cerr << "Usage: unalias <name>\n";
+        ConsoleStyle::writeError("Usage: unalias <name>\n");
         return;
     }
 
     size_t removed = context.aliases.erase(args[0]);
     if (removed == 0) {
-        std::cerr << "Alias not found: " << args[0] << "\n";
+        ConsoleStyle::writeError("Alias not found: " + args[0] + "\n");
         return;
     }
 
@@ -152,13 +152,13 @@ static void commandUnalias(ShellContext& context, const std::vector<std::string>
 static void commandCls(ShellContext&, const std::vector<std::string>&) {
     HANDLE outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
     if (outputHandle == INVALID_HANDLE_VALUE) {
-        std::cerr << "cls failed: invalid console handle\n";
+        ConsoleStyle::writeError("cls failed: invalid console handle\n");
         return;
     }
 
     CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
     if (!GetConsoleScreenBufferInfo(outputHandle, &bufferInfo)) {
-        std::cerr << "cls failed: " << getLastErrorMessage() << "\n";
+        ConsoleStyle::writeError("cls failed: " + getLastErrorMessage() + "\n");
         return;
     }
 
@@ -167,12 +167,12 @@ static void commandCls(ShellContext&, const std::vector<std::string>&) {
     DWORD cellsWritten = 0;
 
     if (!FillConsoleOutputCharacterA(outputHandle, ' ', cellCount, home, &cellsWritten)) {
-        std::cerr << "cls failed: " << getLastErrorMessage() << "\n";
+        ConsoleStyle::writeError("cls failed: " + getLastErrorMessage() + "\n");
         return;
     }
 
     if (!FillConsoleOutputAttribute(outputHandle, bufferInfo.wAttributes, cellCount, home, &cellsWritten)) {
-        std::cerr << "cls failed: " << getLastErrorMessage() << "\n";
+        ConsoleStyle::writeError("cls failed: " + getLastErrorMessage() + "\n");
         return;
     }
 
@@ -182,7 +182,7 @@ static void commandCls(ShellContext&, const std::vector<std::string>&) {
 static void commandTaskList(ShellContext&, const std::vector<std::string>&) {
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (snapshot == INVALID_HANDLE_VALUE) {
-        std::cerr << "tasklist failed: " << getLastErrorMessage() << "\n";
+        ConsoleStyle::writeError("tasklist failed: " + getLastErrorMessage() + "\n");
         return;
     }
 
@@ -190,7 +190,7 @@ static void commandTaskList(ShellContext&, const std::vector<std::string>&) {
     entry.dwSize = sizeof(PROCESSENTRY32);
 
     if (!Process32First(snapshot, &entry)) {
-        std::cerr << "tasklist failed: " << getLastErrorMessage() << "\n";
+        ConsoleStyle::writeError("tasklist failed: " + getLastErrorMessage() + "\n");
         CloseHandle(snapshot);
         return;
     }
@@ -223,24 +223,24 @@ static bool parsePid(const std::string& text, DWORD& pid) {
 
 static void commandTaskKill(ShellContext&, const std::vector<std::string>& args) {
     if (args.size() != 1) {
-        std::cerr << "Usage: taskkill <pid>\n";
+        ConsoleStyle::writeError("Usage: taskkill <pid>\n");
         return;
     }
 
     DWORD pid = 0;
     if (!parsePid(args[0], pid)) {
-        std::cerr << "Invalid PID: " << args[0] << "\n";
+        ConsoleStyle::writeError("Invalid PID: " + args[0] + "\n");
         return;
     }
 
     HANDLE process = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
     if (!process) {
-        std::cerr << "OpenProcess failed: " << getLastErrorMessage() << "\n";
+        ConsoleStyle::writeError("OpenProcess failed: " + getLastErrorMessage() + "\n");
         return;
     }
 
     if (!TerminateProcess(process, 1)) {
-        std::cerr << "TerminateProcess failed: " << getLastErrorMessage() << "\n";
+        ConsoleStyle::writeError("TerminateProcess failed: " + getLastErrorMessage() + "\n");
         CloseHandle(process);
         return;
     }

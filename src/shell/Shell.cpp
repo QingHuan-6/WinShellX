@@ -187,7 +187,7 @@ bool Shell::executeSingle(
     } else if (!outputFilePath.empty()) {
         outputFile.open(outputFilePath, std::ios::trunc);
         if (!outputFile) {
-            std::cerr << "Could not open redirect file: " << outputFilePath << "\n";
+            ConsoleStyle::writeError("Could not open redirect file: " + outputFilePath + "\n");
             return false;
         }
         oldCout = std::cout.rdbuf(outputFile.rdbuf());
