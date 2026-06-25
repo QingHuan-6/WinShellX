@@ -1,0 +1,12 @@
+{
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "clangd.arguments": [
+    "--background-index",
+    "--header-insertion=never"
+  ],
+  "cmake.configureOnOpen": false,
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "files.associations": {
+    "*.h": "cpp"
+  }
+}

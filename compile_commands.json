@@ -1,0 +1,212 @@
+[
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/main.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/main.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/shell/Shell.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/shell/Shell.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/shell/AliasStore.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/shell/AliasStore.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/shell/CompletionProvider.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/shell/CompletionProvider.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/shell/ExternalCommandRunner.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/shell/ExternalCommandRunner.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/shell/HistoryStore.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/shell/HistoryStore.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/shell/LineEditor.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/shell/LineEditor.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/shell/CommandParser.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/shell/CommandParser.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/shell/CommandRegistry.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/shell/CommandRegistry.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/commands/BuiltInCommands.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/commands/BuiltInCommands.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/utils/StringUtils.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/utils/StringUtils.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/utils/PathUtils.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/utils/PathUtils.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/utils/WinApiError.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/utils/WinApiError.cpp"
+    ]
+  },
+  {
+    "directory": "D:/Acode/CSPractise",
+    "file": "D:/Acode/CSPractise/src/utils/ConsoleStyle.cpp",
+    "arguments": [
+      "clang++",
+      "-std=c++17",
+      "-ID:/Acode/CSPractise/include",
+      "-DWIN32",
+      "-D_WINDOWS",
+      "-DUNICODE",
+      "-D_UNICODE",
+      "-c",
+      "D:/Acode/CSPractise/src/utils/ConsoleStyle.cpp"
+    ]
+  }
+]

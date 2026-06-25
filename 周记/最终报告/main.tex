@@ -1,0 +1,813 @@
+% !TEX program = xelatex
+\documentclass[UTF8,a4paper,12pt,fontset=none]{ctexart}
+
+% ======================
+% 页面设置
+% ======================
+\usepackage{geometry}
+\geometry{
+    top=2.5cm,
+    bottom=2cm,
+    left=2.5cm,
+    right=2cm
+}
+
+% ======================
+% 字体与行距
+% ======================
+\usepackage{fontspec}
+\usepackage{setspace}
+\usepackage{ctexsize}
+
+\defaultfontfeatures{Ligatures=TeX}
+
+% 正文英文及混排西文：Times New Roman（新罗马体）；Overleaf 等环境回退 TeX Gyre Termes
+\IfFontExistsTF{Times New Roman}{
+    \setmainfont{Times New Roman}[
+        BoldFont       = Times New Roman Bold,
+        ItalicFont     = Times New Roman Italic,
+        BoldItalicFont = Times New Roman Bold Italic,
+    ]
+    \setmonofont{Times New Roman}[
+        BoldFont       = Times New Roman Bold,
+        ItalicFont     = Times New Roman Italic,
+        BoldItalicFont = Times New Roman Bold Italic,
+    ]
+}{
+    \setmainfont{TeX Gyre Termes}[
+        BoldFont       = TeX Gyre Termes Bold,
+        ItalicFont     = TeX Gyre Termes Italic,
+        BoldItalicFont = TeX Gyre Termes Bold Italic,
+    ]
+    \setmonofont{TeX Gyre Termes}[
+        BoldFont       = TeX Gyre Termes Bold,
+        ItalicFont     = TeX Gyre Termes Italic,
+        BoldItalicFont = TeX Gyre Termes Bold Italic,
+    ]
+}
+
+% 中文字体：本地 Windows 用宋体/黑体/仿宋；Overleaf 等环境回退 Fandol 系列
+\IfFontExistsTF{SimSun}{
+    \setCJKmainfont{SimSun}[AutoFakeBold=true]
+    \setCJKsansfont{SimHei}
+    \setCJKmonofont{FangSong}
+    \setCJKfamilyfont{zhhei}{SimHei}
+    \setCJKfamilyfont{zhsong}{SimSun}
+    \setCJKfamilyfont{zhfs}{FangSong}
+}{
+    \setCJKmainfont{FandolSong}[AutoFakeBold=true]
+    \setCJKsansfont{FandolHei}
+    \setCJKmonofont{FandolFang}
+    \setCJKfamilyfont{zhhei}{FandolHei}
+    \setCJKfamilyfont{zhsong}{FandolSong}
+    \setCJKfamilyfont{zhfs}{FandolFang}
+}
+
+% fontset=none 时需手动补全 ctex 字体切换命令
+\providecommand{\heiti}{\CJKfamily{zhhei}}
+\providecommand{\songti}{\CJKfamily{zhsong}}
+\providecommand{\fangsong}{\CJKfamily{zhfs}}
+
+% 正文小四，固定行距 24 磅
+\AtBeginDocument{
+    \zihao{-4}
+    \setlength{\baselineskip}{24pt}
+}
+
+% 正文首行缩进两个汉字，段前段后不额外留白
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0pt}
+
+% 列表采用（1）（2）编号格式
+\renewcommand{\labelenumi}{（\arabic{enumi}）}
+\renewcommand{\labelenumii}{（\arabic{enumi}.\arabic{enumii}）}
+
+% ======================
+% 标题格式
+% ======================
+\usepackage{titlesec}
+
+% 一级标题：黑体小三，使用中文序号
+\renewcommand{\thesection}{\chinese{section}、}
+\titleformat{\section}
+  {\heiti\zihao{-3}}
+  {\thesection}
+  {0em}
+  {}
+
+% 二级标题：黑体四号
+\titleformat{\subsection}
+  {\heiti\zihao{4}}
+  {\arabic{section}.\arabic{subsection}}
+  {1em}
+  {}
+
+% 三级标题：黑体小四
+\titleformat{\subsubsection}
+  {\heiti\zihao{-4}}
+  {\arabic{section}.\arabic{subsection}.\arabic{subsubsection}}
+  {1em}
+  {}
+
+% ======================
+% 图表、代码与超链接
+% ======================
+\usepackage{graphicx}
+\graphicspath{{figures/}{screenshots/}}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{seqsplit}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{A}{>{\raggedright\arraybackslash}p{4.9cm}}
+\newcolumntype{M}{>{\raggedright\arraybackslash}p{3.0cm}}
+\newcommand{\apiname}[1]{{\small\texttt{\seqsplit{#1}}}}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+\urlstyle{rm}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\captionsetup[figure]{
+    position=bottom,
+    justification=centering,
+    singlelinecheck=true,
+    font=small,
+    labelsep=quad
+}
+
+\captionsetup[table]{
+    position=top,
+    justification=centering,
+    singlelinecheck=true,
+    font=small,
+    labelsep=quad
+}
+
+\IfFontExistsTF{Courier New}{
+    \newfontfamily\codefont{Courier New}
+}{
+    \newfontfamily\codefont{TeX Gyre Cursor}
+}
+
+\lstset{
+    basicstyle=\codefont\zihao{5},
+    breaklines=true,
+    frame=single,
+    columns=fullflexible,
+    backgroundcolor=\color{gray!5},
+    keywordstyle=\color{blue!70!black},
+    commentstyle=\color{green!40!black},
+    showstringspaces=false
+}
+\renewcommand{\lstlistingname}{代码}
+
+% 流程图占位：将同名图片放入 figures 后自动替换占位框
+\newcommand{\reportflowchart}[3]{
+    \begin{figure}[H]
+        \centering
+        \IfFileExists{figures/#1}{
+            \includegraphics[width=0.92\textwidth]{figures/#1}
+        }{
+            \fbox{\parbox[c][5.5cm][c]{0.88\textwidth}{\centering
+            请将流程图保存为\\[0.3cm]
+            \texttt{\detokenize{周记/最终报告/figures/#1}}}}
+        }
+        \caption{#2}
+        \label{#3}
+    \end{figure}
+}
+
+% 系统截图占位：将同名图片放入 screenshots 后自动替换占位框
+\newcommand{\reportscreenshot}[3]{
+    \begin{figure}[H]
+        \centering
+        \IfFileExists{screenshots/#1}{
+            \includegraphics[width=0.92\textwidth]{screenshots/#1}
+        }{
+            \fbox{\parbox[c][6.2cm][c]{0.88\textwidth}{\centering
+            请将系统截图保存为\\[0.3cm]
+            \texttt{\detokenize{周记/最终报告/screenshots/#1}}}}
+        }
+        \caption{#2}
+        \label{#3}
+    \end{figure}
+}
+
+% ======================
+% 页眉页脚
+% ======================
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[C]{\songti\zihao{-5} 武汉理工大学《计算机系统能力实训》报告}
+\cfoot{\songti\zihao{-5}\thepage}
+\setlength{\headheight}{15pt}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ======================
+% 正文开始
+% ======================
+\begin{document}
+
+\begin{center}
+    {\heiti\zihao{2} Windows命令行解释器设计}
+\end{center}
+
+% ======================
+% 一、实训任务概述
+% ======================
+\section{实训任务概述}
+
+\subsection{实训背景与目的}
+
+计算机系统能力实训是面向计算机类专业学生开设的综合实践课程，旨在进一步加强学生对计算机组成原理、操作系统、编译原理、汇编等知识的理解和掌握。通过前期专业课程的学习，学生需要综合利用相关知识，设计并实现一个具有代表性的计算机系统软件，从而培养计算机系统和技术的应用能力。
+
+本次实训题目为\textbf{Windows命令行解释器设计}。任务书要求参考 Windows 系统中的 Command 命令解释程序，采用控制台命令行输入方式，在提示符后读取用户命令，并将执行结果直接显示在控制台中。程序需要能够执行常用的内部命令，包括 \texttt{cd}、\texttt{dir}、\texttt{history}、\texttt{exit}、\texttt{tasklist}、\texttt{taskkill} 等，并通过调用 Windows API 完成与操作系统内核的交互。
+
+通过本次实训，我计划完成以下学习目标：第一，理解命令解释程序在用户、系统调用和操作系统内核之间的层次关系；第二，学习 Windows 系统调用（Win32 API）的定义与使用方法；第三，掌握控制台程序的输入、解析、执行与输出流程；第四，以模块化方式设计并实现一个可扩展的命令行解释器；第五，完成程序测试、调试和实训报告撰写。
+
+\subsection{命令解释程序与系统层次关系}
+
+命令解释程序是用户与操作系统内核之间的接口程序。对于 Windows 系统而言，Command 程序是一个命令语言解释器，它拥有内建的命令集，用户或其他应用程序都可以通过对 Command 程序的调用，完成与系统内核的交互。应用程序并不直接访问硬件，而是通过操作系统提供的系统调用接口请求内核服务；命令解释器则在此基础上进一步封装，使用户能够以简单的文本命令形式操作系统。
+
+硬件、内核、系统调用以及 Command 之间的层次关系可以概括为：最底层是计算机硬件；其上是操作系统内核，负责进程管理、内存管理、文件系统和设备驱动等核心功能；内核向上提供 Win32 API，供应用程序调用；命令解释程序位于最上层，负责接收用户输入、解析命令并调用相应 API 完成操作。例如，用户输入 \texttt{dir} 时，解释器调用文件查找 API 遍历目录；输入 \texttt{tasklist} 时，调用进程快照 API 枚举系统进程；输入 \texttt{taskkill} 时，通过进程控制 API 打开并终止指定进程。
+
+\begin{figure}[H]
+    \centering
+    \IfFileExists{figures/layer_architecture.png}{
+        \includegraphics[width=0.88\textwidth]{figures/layer_architecture.png}
+    }{
+        \fbox{\parbox[c][5.5cm][c]{0.85\textwidth}{\centering
+        硬件、内核、系统调用与 Command 层次关系图\\[0.3cm]
+        \texttt{figures/layer\_architecture.png}}}
+    }
+    \caption{硬件、内核、系统调用以及 Command 之间的层次关系}
+    \label{fig:layer_architecture}
+\end{figure}
+
+\subsection{实训主要任务}
+
+根据任务书要求，本次实训需要完成的主要任务如下。
+
+第一，\textbf{分析命令解释程序与内核的关系}。理解命令解释器在操作系统体系结构中的位置，明确其作为用户接口程序的职责，以及它如何通过 Win32 API 间接调用内核服务。
+
+第二，\textbf{学习 Windows 系统调用}。操作系统把能够完成的功能以函数形式提供给应用程序，这些函数的集合称为 Windows API 或 Win32 API。本次实训需要重点学习目录与文件管理、进程管理、控制台输入输出等相关 API 的定义、参数、返回值和错误处理方式。
+
+第三，\textbf{设计并实现命令行解释器}。参考 Command 命令解释程序，采用控制台命令行输入，命令提示行显示当前目录与提示符 \texttt{>}，在提示符后输入命令，执行结果在控制台中显示。需要实现的内部命令及功能说明如表 \ref{tab:required_commands} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.3}
+    \begin{table}[H]
+        \centering
+        \caption{任务书要求的内部命令}\label{tab:required_commands}
+        \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.0cm} Y}
+            \toprule
+            命令 & 功能说明 \\
+            \midrule
+            \texttt{cd <路径>} & 切换当前工作目录 \\
+            \texttt{dir [路径]} & 显示指定目录下的文件、目录及磁盘空间等相关信息 \\
+            \texttt{history} & 显示控制台中曾经输入过的命令 \\
+            \texttt{exit} & 退出命令解释器 \\
+            \texttt{tasklist} & 显示系统当前进程信息，包括进程标识符 PID、线程数、进程名等 \\
+            \texttt{taskkill <pid>} & 结束系统中正在运行的进程，需提供进程标识 PID \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+\subsection{项目命名与定位}
+
+本项目开发的命令行解释器命名为 \textbf{WinShellX}。其中，\texttt{Win} 表示程序运行平台为 Windows，\texttt{Shell} 表示程序定位为命令行解释器，\texttt{X} 表示系统具备可扩展能力。WinShellX 是一个教学型 Windows 命令行解释器，不追求完全复刻 \texttt{cmd.exe}，而是围绕课程要求，重点展示命令解释器的基本原理、Win32 API 调用方式、模块化设计方法和系统软件开发能力。
+
+WinShellX 采用 C++17 语言开发，使用 CMake 构建，在 Windows 控制台环境中运行。程序启动后显示当前工作目录和 \texttt{>} 提示符，用户输入命令后由解释器完成解析与执行。除任务书要求的基本内部命令外，项目还实现了 \texttt{help}、\texttt{cls}、命令别名、外部命令执行、输出重定向、单级管道、后台任务、历史命令持久化、Tab 智能补全和彩色输出等扩展功能，以提升交互体验并体现对 Windows API 的综合运用能力。
+
+\subsection{预期交付物}
+
+本次实训的预期交付物包括：WinShellX 命令行解释器源代码；可在 Windows 控制台中运行的可执行程序；系统分析文档；系统设计文档；系统实现与测试文档；完整实训报告；以及答辩演示材料。本报告正文按照“实训任务概述、系统分析、系统开发、实训小结、参考文献”五个部分组织，后续章节将分别阐述需求分析、设计与实现细节、测试验证以及心得体会。
+
+% ======================
+% 二、系统分析：即需求分析
+% ======================
+\section{系统分析：即需求分析}
+
+系统分析阶段的主要任务是在理解实训任务书的基础上，明确 WinShellX 命令行解释器需要实现的功能边界、需要调用的 Windows API，以及程序在可靠性、可维护性和可扩展性方面应满足的非功能要求。本节从功能需求、系统用例、Windows API 需求和非功能需求四个层面展开分析，为后续系统设计与编码实现提供依据。
+
+\subsection{功能需求分析}
+
+WinShellX 的功能需求来源于实训任务书对命令行解释器的基本要求，并结合真实 Shell 的使用习惯进行了适度扩展。程序运行在 Windows 控制台中，采用“读取—解析—执行—输出”的循环结构，用户在当前目录提示符后输入一行命令，解释器识别命令类型并调用相应模块完成操作。
+
+\subsubsection{任务书规定的内部命令需求}
+
+任务书要求实现 \texttt{cd}、\texttt{dir}、\texttt{history}、\texttt{exit}、\texttt{tasklist}、\texttt{taskkill} 六类内部命令，各命令的功能需求与输入输出要求如表 \ref{tab:builtin_requirement} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.3}
+    \begin{table}[H]
+        \centering
+        \caption{任务书规定的内部命令功能需求}\label{tab:builtin_requirement}
+        \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.0cm} >{\raggedright\arraybackslash}p{3.2cm} Y}
+            \toprule
+            命令 & 输入形式 & 功能与输出要求 \\
+            \midrule
+            \texttt{cd} & \texttt{cd <路径>} 或 \texttt{cd} & 切换当前工作目录；无参数时显示当前目录 \\
+            \texttt{dir} & \texttt{dir [路径]} & 列出文件与目录，显示修改时间、大小、统计信息和磁盘空间 \\
+            \texttt{history} & \texttt{history} & 按序号输出本会话及历史文件中保存的命令 \\
+            \texttt{exit} & \texttt{exit} & 结束主循环，保存历史与别名后退出程序 \\
+            \texttt{tasklist} & \texttt{tasklist} & 枚举系统进程，显示进程名、PID 和线程数 \\
+            \texttt{taskkill} & \texttt{taskkill <pid>} & 根据 PID 打开并终止指定进程，输出成功或错误信息 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+对于 \texttt{cd} 命令，需要支持绝对路径、相对路径和 \texttt{..} 上级目录切换；路径中包含空格时应支持引号包裹。对于 \texttt{dir} 命令，需要区分文件与目录，目录以 \texttt{<DIR>} 标识，并统计文件数、目录数、总字节数和磁盘剩余空间。对于 \texttt{taskkill} 命令，需要校验 PID 是否为合法数字，并在进程不存在、权限不足或终止失败时给出明确提示。
+
+\subsubsection{扩展内部命令与辅助功能需求}
+
+为提升程序的完整性和答辩演示效果，WinShellX 在任务书要求之外增加了若干内部命令和辅助功能，如表 \ref{tab:extended_requirement} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.3}
+    \begin{table}[H]
+        \centering
+        \caption{扩展内部命令与辅助功能需求}\label{tab:extended_requirement}
+        \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.0cm} Y}
+            \toprule
+            命令或功能 & 功能说明 \\
+            \midrule
+            \texttt{help} & 列出全部内部命令的名称、用法和简要说明 \\
+            \texttt{cls} & 调用 Console API 清空控制台屏幕并重置光标 \\
+            \texttt{alias} / \texttt{unalias} & 创建、查看和删除命令别名，支持持久化保存 \\
+            输出重定向 & 支持 \texttt{命令 > 文件}，将标准输出写入指定文件 \\
+            单级管道 & 支持 \texttt{命令1 | 命令2}，将左侧输出作为右侧输入 \\
+            后台执行 & 外部命令末尾加 \texttt{\&} 时异步启动，立即返回提示符 \\
+            彩色输出 & 提示符、目录名、成功信息和错误信息使用不同颜色显示 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+别名功能允许用户将常用命令简写为短名称，例如 \texttt{alias ll=dir} 之后输入 \texttt{ll} 即可执行 \texttt{dir}。别名数据保存在当前目录下的 \texttt{.winshellx\_aliases} 文件中，程序启动时自动加载，退出时自动保存。历史命令保存在 \texttt{.winshellx\_history} 文件中，实现跨会话的历史记录查看。
+
+\subsubsection{外部命令执行需求}
+
+当用户输入的命令名不在内部命令注册表中时，WinShellX 需要按照类似 \texttt{cmd.exe} 的规则尝试启动外部程序。外部命令执行的功能需求如下。
+
+第一，解析命令行的第一个 token 作为可执行文件名，其余内容作为参数传递给外部程序。第二，若命令名不含扩展名，则读取 \texttt{PATHEXT} 环境变量，依次尝试 \texttt{.COM}、\texttt{.EXE}、\texttt{.BAT}、\texttt{.CMD} 等扩展名。第三，若命令不含目录部分，则依次在当前目录、系统目录、Windows 目录和 \texttt{PATH} 环境变量所列目录中搜索可执行文件。第四，对 \texttt{.exe}、\texttt{.com} 等可执行文件直接调用 \texttt{CreateProcess} 启动；对 \texttt{.bat}、\texttt{.cmd} 批处理文件使用 \texttt{cmd.exe /c} 包装执行。第五，默认等待外部进程结束后返回 WinShellX；若命令以 \texttt{\&} 结尾，则后台启动并显示进程 PID。第六，外部程序不存在或启动失败时，输出与 cmd 类似的“不是内部或外部命令”提示。
+
+\subsubsection{交互增强需求}
+
+为改善控制台交互体验，WinShellX 需要实现比基础 \texttt{std::getline} 更丰富的行编辑能力，具体需求如表 \ref{tab:interaction_requirement} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.3}
+    \begin{table}[H]
+        \centering
+        \caption{交互增强功能需求}\label{tab:interaction_requirement}
+        \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.2cm} >{\raggedright\arraybackslash}p{3.6cm} Y}
+            \toprule
+            交互方式 & 触发条件 & 预期行为 \\
+            \midrule
+            Tab 补全 & 输入命令或路径前缀后按 Tab & 补全为匹配的历史命令、内置命令名或目录名 \\
+            上下方向键 & 在提示符下按 Up/Down & 在历史命令中向前或向后翻阅 \\
+            F7 历史选择 & 输入前缀后按 F7 & 显示最近匹配的历史列表，输入数字选择 \\
+            灰色 hint & 输入过程中 & 在光标后显示当前最佳补全候选 \\
+            提示符显示 & 每次读取输入前 & 显示“当前目录\textgreater{}”格式的命令提示符 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+上述交互功能通过 \texttt{ReadConsoleInput} 读取按键事件，结合 \texttt{CompletionProvider} 生成补全候选，使 WinShellX 在保持教学型 Shell 定位的同时，具备接近日常使用 Shell 的操作体验。
+
+\subsection{系统用例分析}
+
+根据前述功能需求，WinShellX 的系统参与者为在控制台中使用命令行解释器的\textbf{用户}。用户通过在当前目录提示符后输入命令与系统交互，由解释器完成命令解析、内部命令执行或外部程序调用，并将结果输出到控制台。系统总体用例关系如图 \ref{fig:system_use_case} 所示。
+
+\begin{figure}[H]
+    \centering
+    \IfFileExists{figures/use_case.png}{
+        \includegraphics[width=0.92\textwidth]{figures/use_case.png}
+    }{
+        \fbox{\parbox[c][6.2cm][c]{0.88\textwidth}{\centering
+        请将用例图保存为\\[0.3cm]
+        \texttt{\detokenize{周记/最终报告/figures/use_case.png}}}}
+    }
+    \caption{WinShellX 系统用例图}
+    \label{fig:system_use_case}
+\end{figure}
+
+图 \ref{fig:system_use_case} 中，用户作为唯一参与者，与 WinShellX 提供的各类用例相关联。其中，\textbf{切换目录}和\textbf{浏览目录}对应当前工作目录的管理与文件系统查看，是命令解释器最基础的操作；\textbf{查看历史}、\textbf{管理别名}和\textbf{命令补全}共同支撑命令行交互体验；\textbf{枚举进程}和\textbf{终止进程}体现对 Windows 系统进程的管理能力；\textbf{执行外部命令}、\textbf{输出重定向}和\textbf{管道连接}使用户可以在 WinShellX 中调用系统程序并组合命令；\textbf{查看帮助}、\textbf{清屏}和\textbf{退出系统}则完成辅助说明、界面整理和程序结束等操作。
+
+在主要用例流程中，用户启动 WinShellX 后进入命令输入循环，每次输入经解释器解析后分发至对应内部命令处理函数或外部命令执行模块。以\textbf{浏览目录}为例，用户输入 \texttt{dir} 后，系统调用文件查找 API 遍历目录并将结果格式化输出；以\textbf{终止进程}为例，用户输入 \texttt{taskkill <pid>} 后，系统校验 PID 合法性，再调用进程控制 API 结束目标进程。
+
+在异常流程方面，若用户输入未知命令且外部程序搜索失败，系统输出“不是内部或外部命令”提示；若目录不存在或 API 调用失败，系统显示 Windows 错误信息；若 PID 非法或权限不足，\textbf{终止进程}用例拒绝执行并给出明确说明。上述异常处理保证即使用户输入不符合预期，程序仍能稳定运行并返回可读反馈。
+
+\subsection{Windows API 需求分析}
+
+WinShellX 作为运行在 Win32 平台上的控制台程序，其核心功能依赖 Windows API 而非直接访问硬件或内核。操作系统将文件管理、进程管理、控制台操作等功能以 API 函数形式提供给应用程序，WinShellX 通过调用这些 API 间接请求内核服务。根据功能需求，本项目需要学习和使用的主要 API 如表 \ref{tab:api_file} 至表 \ref{tab:api_console} 所示。
+
+\subsubsection{目录与文件管理 API}
+
+目录切换和目录列表是命令解释器最基础的功能，相关 API 需求如表 \ref{tab:api_file} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.3}
+    \setlength{\tabcolsep}{6pt}
+    \begin{table}[H]
+        \centering
+        \caption{目录与文件管理相关 API}\label{tab:api_file}
+        \begin{tabularx}{\textwidth}{A Y M}
+            \toprule
+            API 函数 & 用途 & 对应命令或模块 \\
+            \midrule
+            \apiname{GetCurrentDirectory} & 获取当前工作目录路径 & 提示符显示、\texttt{cd} 无参输出 \\
+            \apiname{SetCurrentDirectory} & 设置当前工作目录 & \texttt{cd} 命令 \\
+            \apiname{FindFirstFile} / \apiname{FindNextFile} & 遍历目录中的文件和子目录 & \texttt{dir} 命令 \\
+            \apiname{FindClose} & 关闭文件查找句柄 & \texttt{dir} 命令 \\
+            \apiname{GetDiskFreeSpaceEx} & 查询磁盘总空间与剩余空间 & \texttt{dir} 末尾磁盘信息 \\
+            \apiname{GetFileAttributes} & 判断路径是否存在及是否为目录 & 外部命令路径解析 \\
+            \apiname{FileTimeToSystemTime} 等 & 转换并显示文件修改时间 & \texttt{dir} 时间列输出 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+\subsubsection{进程管理 API}
+
+进程枚举与进程终止是任务书明确要求的系统级功能，相关 API 需求如表 \ref{tab:api_process} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.3}
+    \setlength{\tabcolsep}{6pt}
+    \begin{table}[H]
+        \centering
+        \caption{进程管理相关 API}\label{tab:api_process}
+        \begin{tabularx}{\textwidth}{A Y M}
+            \toprule
+            API 函数 & 用途 & 对应命令或模块 \\
+            \midrule
+            \apiname{CreateToolhelp32Snapshot} & 创建系统进程快照 & \texttt{tasklist} 命令 \\
+            \apiname{Process32First} / \apiname{Process32Next} & 遍历快照中的进程条目 & \texttt{tasklist} 命令 \\
+            \apiname{OpenProcess} & 按 PID 打开进程句柄 & \texttt{taskkill} 命令 \\
+            \apiname{TerminateProcess} & 终止指定进程 & \texttt{taskkill} 命令 \\
+            \apiname{CloseHandle} & 关闭进程、线程和管道句柄 & 全部涉及句柄的模块 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+\subsubsection{进程创建与环境 API}
+
+外部命令执行、管道连接和后台任务依赖进程创建与环境变量读取 API，如表 \ref{tab:api_create} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.3}
+    \setlength{\tabcolsep}{6pt}
+    \begin{table}[H]
+        \centering
+        \caption{进程创建与环境相关 API}\label{tab:api_create}
+        \begin{tabularx}{\textwidth}{A Y M}
+            \toprule
+            API 函数 & 用途 & 对应命令或模块 \\
+            \midrule
+            \apiname{CreateProcess} & 创建新进程执行外部程序 & \texttt{ExternalCommandRunner} \\
+            \apiname{CreatePipe} & 创建匿名管道连接标准输入输出 & 管道与重定向模块 \\
+            \apiname{ReadFile} / \apiname{WriteFile} & 读写管道和重定向文件 & 管道与重定向模块 \\
+            \apiname{WaitForSingleObject} & 等待外部进程结束 & 前台外部命令 \\
+            \apiname{GetEnvironmentVariable} & 读取 PATH、PATHEXT、ComSpec 等 & 外部命令搜索与批处理执行 \\
+            \apiname{GetSystemDirectory} / \apiname{GetWindowsDirectory} & 获取系统和 Windows 目录 & 外部命令搜索路径 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+\subsubsection{控制台输入输出 API}
+
+控制台交互、清屏和彩色输出依赖 Console API，如表 \ref{tab:api_console} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.3}
+    \setlength{\tabcolsep}{6pt}
+    \begin{table}[H]
+        \centering
+        \caption{控制台输入输出相关 API}\label{tab:api_console}
+        \begin{tabularx}{\textwidth}{A Y M}
+            \toprule
+            API 函数 & 用途 & 对应命令或模块 \\
+            \midrule
+            \apiname{GetStdHandle} & 获取标准输入输出句柄 & 全局控制台访问 \\
+            \apiname{GetConsoleMode} / \apiname{SetConsoleMode} & 切换原始输入模式 & \texttt{LineEditor} 行编辑 \\
+            \apiname{ReadConsoleInput} & 读取键盘按键事件 & Tab、F7、方向键处理 \\
+            \apiname{GetConsoleScreenBufferInfo} & 获取屏幕缓冲区信息 & \texttt{cls} 命令 \\
+            \apiname{FillConsoleOutputCharacter} 等 & 清空屏幕并重置光标 & \texttt{cls} 命令 \\
+            \apiname{SetConsoleTextAttribute} & 设置控制台文字颜色 & \texttt{ConsoleStyle} 彩色输出 \\
+            \apiname{FormatMessage} / \apiname{GetLastError} & 获取 API 失败时的错误描述 & \texttt{WinApiError} 错误处理 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+通过上述 API 的调用，WinShellX 可以在用户态程序中完成目录浏览、进程管理和外部程序启动等操作，从而体现“命令解释程序通过系统调用接口与内核交互”的实训目标。所有 API 调用均需检查返回值，失败时使用 \texttt{GetLastError} 和 \texttt{FormatMessage} 转换错误码并输出可读提示。
+
+\subsection{非功能需求分析}
+
+除具体功能外，WinShellX 作为系统软件实训项目，还需要满足可维护性、可扩展性、可靠性和运行环境等方面的非功能需求。这些要求不直接对应某一条命令，但决定了程序能否稳定运行以及后续是否便于扩展和调试。
+
+\subsubsection{可维护性与可扩展性}
+
+WinShellX 采用 C++17 和模块化目录结构组织代码，将主控循环、命令解析、命令注册、内置命令、外部命令执行、历史别名存储和工具函数分别置于独立源文件中。命令注册表 \texttt{CommandRegistry} 维护命令名与处理函数的映射关系，新增内部命令时只需实现处理函数并在注册表中登记，无需修改主循环核心逻辑。该设计符合高内聚、低耦合原则，便于后续添加新命令或调整单个模块的实现。
+
+\subsubsection{可靠性与错误处理}
+
+程序需要对常见异常输入和 API 失败场景进行处理，包括：空命令行直接跳过；未知命令输出明确提示；路径不存在时显示 Windows 错误信息；PID 非法或非数字时拒绝 \texttt{taskkill}；外部程序启动失败时输出 \texttt{CreateProcess} 错误原因；重定向文件无法打开时中止执行；后台模式与管道、重定向组合使用时给出限制说明。所有 Windows API 调用均检查返回值，避免静默失败导致程序行为不可预测。
+
+\subsubsection{运行环境与性能要求}
+
+WinShellX 需要在 Windows 10/11 64 位系统的控制台环境中运行，使用 CMake 构建，编译标准为 C++17。程序为单进程、单线程主循环结构（管道读取时使用辅助线程），不涉及高并发场景，对性能要求主要为：目录列表和进程枚举在普通目录和常规进程数量下应能即时响应；历史记录和别名文件读写不应明显拖慢启动和退出速度。程序不依赖第三方库，仅使用 C++ 标准库和 Win32 API，降低部署和编译依赖。
+
+WinShellX 非功能需求汇总如表 \ref{tab:non_function_requirement} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.3}
+    \begin{table}[H]
+        \centering
+        \caption{WinShellX 非功能需求汇总}\label{tab:non_function_requirement}
+        \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.0cm} Y Y}
+            \toprule
+            需求类型 & 具体要求 & 设计或实现措施 \\
+            \midrule
+            可维护性 & 模块职责清晰，主循环与具体命令解耦 & 分层目录、\texttt{CommandRegistry} 注册机制 \\
+            可扩展性 & 新增命令时不改动主循环 & 统一 \texttt{CommandInfo} 接口与注册函数 \\
+            可靠性 & API 失败和非法输入不导致崩溃 & 返回值检查、\texttt{WinApiError} 统一错误提示 \\
+            易用性 & 提示符清晰，错误信息可读，支持补全与彩色输出 & \texttt{LineEditor}、\texttt{ConsoleStyle} \\
+            持久化 & 历史与别名跨会话保留 & \texttt{HistoryStore}、\texttt{AliasStore} 文件读写 \\
+            运行环境 & Windows 控制台，C++17，无第三方依赖 & CMake 构建，Win32 API 直接调用 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+综上所述，WinShellX 的功能需求覆盖了任务书规定的内部命令、外部命令执行和基本 Shell 特性，Windows API 需求明确了各模块需要调用的系统接口，非功能需求则从软件工程质量角度约束了程序的结构与行为。以上分析结果将作为第三章系统总体设计、详细设计和编码实现的直接输入。
+
+% ======================
+% 三、系统开发
+% ======================
+\section{系统开发}
+
+本章按模块介绍 WinShellX 的设计与实现。各模块均给出流程图与运行效果截图，不再展开具体代码细节。流程图导出为 PNG 放入 \texttt{figures/}，控制台截图放入 \texttt{screenshots/}，重新编译后自动插入正文。
+
+\subsection{总体设计}
+
+WinShellX 采用“主控循环 + 命令注册表 + 功能模块”的分层结构。程序启动后进入读取、解析、执行、输出的循环，各模块通过共享上下文传递历史、别名和运行状态，彼此耦合度较低。
+
+系统功能模块划分如表 \ref{tab:module_design} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.35}
+    \begin{table}[H]
+        \centering
+        \caption{WinShellX 功能模块划分}\label{tab:module_design}
+        \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.8cm} Y}
+            \toprule
+            模块名称 & 模块说明 \\
+            \midrule
+            主控与调度 & 源文件 Shell.cpp。负责主循环、提示符显示、别名展开与命令分发。 \\
+            命令解析与注册 & 源文件 CommandParser.cpp、CommandRegistry.cpp。负责解析命令行、维护命令表与输出帮助信息。 \\
+            内置命令 & 源文件 BuiltInCommands.cpp。实现 cd、dir、history、exit、tasklist、taskkill 等内部命令。 \\
+            外部命令执行 & 源文件 ExternalCommandRunner.cpp。按 PATH 规则搜索可执行文件并启动外部进程。 \\
+            管道与重定向 & 在 Shell.cpp 中解析 \textgreater{} 与 \textbar{} 符号，完成标准输出重定向与单级管道连接。 \\
+            历史与别名 & 源文件 HistoryStore.cpp、AliasStore.cpp。负责历史命令与别名的文件持久化及会话内维护。 \\
+            行编辑与补全 & 源文件 LineEditor.cpp、CompletionProvider.cpp。支持方向键、Tab、F7 及路径补全。 \\
+            工具支持 & 源文件 PathUtils、WinApiError、ConsoleStyle。提供路径处理、错误提示与彩色输出。 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+程序总体执行流程与启动效果如图 \ref{fig:flow_main}、图 \ref{fig:startup} 所示。
+
+\reportflowchart{flow_main_loop.png}{WinShellX 主程序总体流程图}{fig:flow_main}
+\reportscreenshot{startup.png}{WinShellX 启动与命令提示符}{fig:startup}
+
+\subsection{模块设计与实现}
+
+\subsubsection{主控与命令调度模块}
+
+主控与命令调度模块是 WinShellX 的核心控制单元，其功能是在程序整个生命周期内维持“显示提示符—读取输入—调度执行—返回提示符”的主循环，使用户能够连续输入多条命令并与操作系统交互。该模块还负责在命令真正执行前完成别名展开，以及识别命令行中的管道、重定向和后台运行标记，从而决定后续由内部命令模块还是外部命令模块处理当前输入。
+
+为实现上述控制逻辑，主控模块在程序运行过程中维护一套清晰的工作状态，可概括为以下四个阶段：
+
+\begin{enumerate}
+    \item 初始化阶段：程序启动后加载别名文件与历史文件，注册全部内部命令，并在控制台输出启动提示信息。
+    \item 等待输入阶段：显示“当前目录\textgreater{}”形式的命令提示符，调用行编辑模块阻塞等待用户输入一行命令。
+    \item 命令调度阶段：对用户输入进行别名替换和语法预处理，按是否存在管道、重定向或后台标记，选择单命令执行、管道串联或后台启动等处理方式。
+    \item 退出保存阶段：当用户执行 exit 或输入结束（EOF）时，终止主循环，将当前会话的历史命令与别名写回磁盘后退出程序。
+\end{enumerate}
+
+用户每输入一条非空命令，模块都会将其追加到会话历史列表，并驱动状态在“等待输入—命令调度—等待输入”之间循环转移。若命令行末尾带有 \& 符号，则以外部命令后台方式启动子进程，主控模块不等待其结束即返回提示符。主控模块的状态转移与调度流程如图 \ref{fig:flow_shell} 所示，程序启动后的命令提示符界面如图 \ref{fig:startup} 所示。
+
+\reportflowchart{flow_shell_main.png}{主控与命令调度模块流程图}{fig:flow_shell}
+\reportscreenshot{startup.png}{主控与命令调度模块运行效果（启动界面）}{fig:startup}
+
+\subsubsection{命令解析与注册模块}
+
+命令解析与注册模块的核心功能是将用户输入的原始字符串转换为可执行的结构化命令对象，并在内部命令注册表中查找是否存在对应处理函数。该模块相当于 WinShellX 的“命令字典”：一方面负责拆分命令名与参数，另一方面统一维护 help、cd、dir 等内部命令的名称、用法说明和执行入口。
+
+命令解析与注册的主要工作流程如下：首先，输入字符串经词法拆分得到命令名和参数列表，其中命令名统一转换为小写，以减少大小写差异带来的匹配失败；随后，在 CommandRegistry 哈希表中检索该命令名；若检索成功，则调用注册时绑定的处理函数；若检索失败，则判定为外部命令，交由 ExternalCommandRunner 继续处理。help 命令则直接遍历注册表，将所有内部命令的用法与说明格式化输出。
+
+当用户输入带引号的路径、带空格的多参数命令或空参数命令时，解析模块会尽量保持参数边界正确，避免把完整路径错误拆成多个 token。该模块的处理流程如图 \ref{fig:flow_parser} 所示；用户在控制台执行 help 命令后看到的命令列表，即注册表内容在界面上的具体呈现，如图 \ref{fig:help} 所示。
+
+\reportflowchart{flow_command_dispatch.png}{命令解析与注册模块流程图}{fig:flow_parser}
+\reportscreenshot{help.png}{命令解析与注册模块运行效果（help 命令）}{fig:help}
+
+\subsubsection{内置命令模块}
+
+内置命令模块的核心功能是直接通过 Win32 API 完成目录管理、进程管理、控制台控制等系统级操作，而不依赖外部可执行文件。该模块集中实现了任务书要求的 cd、dir、history、exit、tasklist、taskkill，并扩展实现了 help、cls、alias、unalias 等命令，是 WinShellX 区别于普通控制台程序的关键组成部分。
+
+内置命令模块采用“命令名—处理函数”的一对一映射方式组织逻辑。当主控模块分发到某一内部命令后，对应处理函数按如下规则执行：
+
+\begin{enumerate}
+    \item cd 命令：无参数时输出当前工作目录；有参数时调用 SetCurrentDirectory 切换目录，失败则输出 Windows 错误信息。
+    \item dir 命令：通过 FindFirstFile 与 FindNextFile 遍历目标目录，输出文件修改时间、大小、目录标识及统计信息，并在末尾显示磁盘空间。
+    \item history 命令：按序号输出当前会话中已记录的全部历史命令。
+    \item tasklist 命令：创建系统进程快照，逐项输出进程名、PID 和线程数。
+    \item taskkill 命令：先校验 PID 是否为合法数字，再打开目标进程并尝试终止；权限不足或进程不存在时给出明确提示。
+    \item cls 命令：调用控制台 API 清空屏幕缓冲区并重置光标位置。
+    \item exit 命令：将会话运行标志置为 false，触发主控模块进入退出保存阶段。
+\end{enumerate}
+
+各内部命令彼此独立，新增命令时只需实现处理函数并在注册表中登记，无需修改主循环。图 \ref{fig:flow_builtin} 为内置命令模块的总体处理流程；图 \ref{fig:dir} 和图 \ref{fig:tasklist} 分别展示了 dir 与 tasklist 命令在控制台中的实际输出效果。
+
+\reportflowchart{flow_builtin_cmds.png}{内置命令模块流程图}{fig:flow_builtin}
+\reportscreenshot{dir.png}{内置命令模块运行效果（dir 命令）}{fig:dir}
+\reportscreenshot{tasklist.png}{内置命令模块运行效果（tasklist 命令）}{fig:tasklist}
+
+\subsubsection{外部命令执行模块}
+
+外部命令执行模块的核心功能是当用户输入的命令不属于 WinShellX 内部命令集时，按照 Windows 命令行解释器的惯例搜索并启动外部程序，从而使用户能够运行 notepad、calc、cmd 等系统工具或 PATH 中的第三方程序。该模块是 WinShellX 由“教学型命令解释器”扩展为“可用 Shell”的重要环节。
+
+外部命令的执行过程可描述为以下四个步骤：
+
+\begin{enumerate}
+    \item 命令拆分：将输入行拆分为可执行文件名和后续参数字符串。
+    \item 路径搜索：若命令不含扩展名，则读取 PATHEXT 环境变量依次尝试 .COM、.EXE、.BAT、.CMD 等后缀；若不含目录部分，则依次在当前目录、系统目录、Windows 目录和 PATH 所列目录中查找。
+    \item 进程创建：对普通可执行文件直接调用 CreateProcess 启动；对 .bat/.cmd 批处理文件则使用 cmd.exe /c 包装执行。
+    \item 结束等待：默认等待子进程结束后返回 WinShellX；若命令以 \& 结尾，则后台启动并立即显示子进程 PID。
+\end{enumerate}
+
+若在所有候选路径中均未找到匹配的可执行文件，模块输出“不是内部或外部命令”的错误提示，行为与 cmd 保持一致。对于需要接收管道输入或输出重定向的外部命令，模块还会创建匿名管道或绑定输出文件句柄，保证与左侧命令正确连接。图 \ref{fig:flow_external} 为外部命令执行流程；图 \ref{fig:external} 为执行 notepad 命令时的运行效果。
+
+\reportflowchart{flow_external_cmd.png}{外部命令执行模块流程图}{fig:flow_external}
+\reportscreenshot{external_notepad.png}{外部命令执行模块运行效果（notepad 命令）}{fig:external}
+
+\subsubsection{管道与重定向模块}
+
+管道与重定向模块的核心功能是改变命令结果的输出去向，或把前一个命令的标准输出作为后一个命令的标准输入，从而支持“过滤”“保存到文件”等组合操作。该模块使用户在不离开 WinShellX 的情况下，完成与 cmd 类似的 \textgreater{} 和 \textbar{} 语法操作。
+
+模块在处理一条完整输入时，按如下顺序解析控制符号：首先检查行尾是否存在 \& 后台标记；其次查找未被引号包裹的 \textgreater{} 符号以确定输出文件；最后查找 \textbar{} 符号以判断是否构成单级管道。根据解析结果，模块进入不同工作模式：
+
+\begin{enumerate}
+    \item 普通输出模式：命令结果直接打印到控制台屏幕。
+    \item 重定向模式：将标准输出写入指定文件，若文件已存在则覆盖；文件无法打开时终止执行并提示错误。
+    \item 管道模式：先执行左侧命令并收集其全部输出，再将该输出作为右侧命令的标准输入继续执行。
+    \item 组合模式：支持“管道后再重定向”，例如将过滤结果写入 result.txt。
+\end{enumerate}
+
+对于内部命令，模块通过临时替换标准输出流捕获文本；对于外部命令，则使用 CreatePipe、ReadFile 和 WriteFile 在进程间传递数据。需要说明的是，当前版本的后台模式与管道、重定向尚不支持同时使用，模块会在检测到冲突组合时给出明确提示。图 \ref{fig:flow_pipe} 为管道与重定向的处理流程；图 \ref{fig:redirect} 和图 \ref{fig:pipe} 分别为输出重定向与单级管道的运行效果。
+
+\reportflowchart{flow_pipe_redirect.png}{管道与重定向模块流程图}{fig:flow_pipe}
+\reportscreenshot{redirect.png}{管道与重定向模块运行效果（dir \textgreater{} out.txt）}{fig:redirect}
+\reportscreenshot{pipe.png}{管道与重定向模块运行效果（dir \textbar{} find "cpp"）}{fig:pipe}
+
+\subsubsection{历史记录与别名模块}
+
+历史记录与别名模块的核心功能是在多个会话之间保留用户的命令输入习惯：历史记录使用户能够查看曾经执行过的命令，别名使用户能够为常用命令定义简短替代名称。该模块显著提升了 WinShellX 的连续操作效率，也是行编辑与智能补全模块的重要数据来源。
+
+历史记录的工作流程为：程序启动时从 .winshellx\_history 文件加载历史命令到内存；用户在提示符下每输入一条有效命令，模块即将其追加到历史向量尾部；执行 history 命令时按序号输出全部记录；程序退出时对历史去重，保留最近 200 条不重复命令并写回文件。别名的工作流程为：用户通过 alias name=command 创建映射关系，通过 unalias name 删除映射；别名保存在 .winshellx\_aliases 文件中，程序启动时加载，每次用户输入命令前由主控模块对首 token 做别名展开。
+
+两个子功能协同工作时，用户可以先定义 alias ll=dir，之后输入 ll 等效于 dir；同时 history 命令能够显示包含 ll 和 dir 在内的全部历史记录。图 \ref{fig:flow_history} 为历史与别名模块的处理流程；图 \ref{fig:history} 和图 \ref{fig:alias} 分别为 history 命令与 alias 命令的运行效果。
+
+\reportflowchart{flow_history_alias.png}{历史记录与别名模块流程图}{fig:flow_history}
+\reportscreenshot{history.png}{历史记录与别名模块运行效果（history 命令）}{fig:history}
+\reportscreenshot{alias.png}{历史记录与别名模块运行效果（alias ll=dir）}{fig:alias}
+
+\subsubsection{行编辑与智能补全模块}
+
+行编辑与智能补全模块的核心功能是在用户输入命令的过程中提供接近现代 Shell 的交互体验：支持方向键翻阅历史、Tab 键接受补全、F7 键从最近匹配项中选择命令，并在光标后方显示灰色 hint 提示。该模块使 WinShellX 不再局限于简单的“读一行—执行一行”，而具备基本的交互式编辑能力。
+
+行编辑模块在读取输入时将控制台切换为原始输入模式，通过 ReadConsoleInput 捕获按键事件。根据按键类型，模块进入不同的响应分支：
+
+\begin{enumerate}
+    \item 可打印字符：追加到当前输入缓冲区，并刷新 hint 提示。
+    \item Up/Down 方向键：在会话历史命令中向前或向后切换，临时保存用户尚未提交的草稿输入。
+    \item Tab 键：调用 CompletionProvider 生成补全结果并直接替换当前输入。
+    \item F7 键：列出与当前前缀匹配的最近 9 条历史命令，用户按数字键选择其中一条。
+    \item Enter 键：结束输入，将最终命令行返回主控模块。
+\end{enumerate}
+
+智能补全采用三级优先策略：第一优先级为历史命令前缀匹配，第二优先级为内置命令名匹配，第三优先级为当前目录下的文件或文件夹路径匹配。只有当前一级未找到合适候选时，才继续尝试下一级。该策略保证用户重复执行最近命令时补全最快，同时也支持 dir s 这类路径补全场景。图 \ref{fig:flow_complete} 为行编辑与补全的处理流程；图 \ref{fig:tab} 为 Tab 补全的运行效果。
+
+\reportflowchart{flow_completion.png}{行编辑与智能补全模块流程图}{fig:flow_complete}
+\reportscreenshot{tab_complete.png}{行编辑与智能补全模块运行效果（Tab 补全）}{fig:tab}
+
+\subsection{编码及测试}
+
+\subsubsection{开发环境}
+
+WinShellX 在 Windows 11 环境下使用 Visual Studio 与 CMake 构建，主要开发工具如表 \ref{tab:dev_env} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.35}
+    \begin{table}[H]
+        \centering
+        \caption{开发环境}\label{tab:dev_env}
+        \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.8cm} >{\raggedright\arraybackslash}p{2.8cm} Y}
+            \toprule
+            环境或工具 & 版本 & 用途 \\
+            \midrule
+            操作系统 & Windows 11 64 位 & 编译与运行 WinShellX \\
+            编程语言 & C++17 & 实现命令解释器各模块 \\
+            构建工具 & CMake 3.16+ & 工程配置与编译 \\
+            编译器 & MSVC / MinGW & 生成可执行程序 \\
+            Windows SDK & 10/11 SDK & 提供 Win32 API 头文件与链接库 \\
+            调试运行 & 控制台 / run\_winshellx.bat & 功能测试与答辩演示 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+\subsubsection{功能测试}
+
+功能测试以手工测试为主，覆盖内部命令、外部命令、管道重定向、别名、历史、补全和异常输入等场景。主要测试结果如表 \ref{tab:test_result} 所示。
+
+\begingroup
+    \renewcommand{\arraystretch}{1.35}
+    \begin{table}[H]
+        \centering
+        \caption{主要功能测试结果}\label{tab:test_result}
+        \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.4cm} Y >{\centering\arraybackslash}p{2.0cm}}
+            \toprule
+            测试模块 & 测试内容与预期结果 & 结果 \\
+            \midrule
+            内置命令 & cd、dir、exit、help、cls 正常执行 & 通过 \\
+            进程命令 & tasklist 枚举进程；taskkill 对非法 PID 给出提示 & 通过 \\
+            外部命令 & notepad、cmd /c echo ok 可启动并返回 & 通过 \\
+            重定向 & dir \textgreater{} out.txt 生成文件且内容正确 & 通过 \\
+            管道 & dir \textbar{} find "cpp" 仅输出匹配行 & 通过 \\
+            别名 & alias ll=dir 后 ll 等效于 dir & 通过 \\
+            历史 & 上下键翻阅；退出后 history 仍可查看 & 通过 \\
+            补全 & 输入 ta 后 Tab 补全为 tasklist 等 & 通过 \\
+            异常处理 & 未知命令、非法路径、非法 PID 均给出错误提示 & 通过 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+\endgroup
+
+推荐答辩演示顺序：help $\rightarrow$ dir $\rightarrow$ cd .. $\rightarrow$ history $\rightarrow$ alias ll=dir $\rightarrow$ dir \textgreater{} out.txt $\rightarrow$ dir \textbar{} find "cpp" $\rightarrow$ tasklist $\rightarrow$ exit。
+
+\subsection{编程技巧}
+
+WinShellX 在实现上采用命令注册表统一管理内部命令，新增命令时无需改动主循环；将输入预处理与单命令执行分离，便于支持管道和重定向；历史、别名、补全和具体命令执行相互独立，便于分模块测试与维护；Win32 错误通过统一函数转换为可读提示，提升用户体验。
+
+% ======================
+% 四、实训小结
+% ======================
+\section{实训小结}
+
+\subsection{设计特点}
+
+WinShellX 的设计特点可概括为以下四点。一是\textbf{贴近任务书要求}，完整实现 \texttt{cd}、\texttt{dir}、\texttt{history}、\texttt{exit}、\texttt{tasklist}、\texttt{taskkill} 等内部命令，并通过 Win32 API 与操作系统交互。二是\textbf{模块化与可扩展性}，采用命令注册表和上下文对象，新增内部命令只需增加处理函数并完成注册。三是\textbf{功能适度扩展}，在基本命令之外实现外部程序执行、管道重定向、别名、历史持久化和 Tab 补全，更接近真实 Shell 的使用体验。四是\textbf{错误处理与输出友好}，对 API 失败、非法参数和未知命令给出彩色提示，便于用户定位问题。
+
+\subsection{实训体会}
+
+通过本次实训，我对命令解释程序在操作系统中的位置有了更具体的认识：用户输入的命令最终需要通过 Win32 API 间接调用内核提供的服务。编码过程中，我熟悉了 \texttt{CreateProcess}、\texttt{FindFirstFile}、\texttt{CreateToolhelp32Snapshot} 等 API 的用法，也体会到控制台程序在输入解析、输出格式和错误反馈方面需要格外细致。
+
+与单独编写小型实验程序相比，WinShellX 需要协调解析、注册、执行、持久化和交互等多个模块，任何一个环节出错都会影响整体行为。管道重定向和外部命令搜索路径的调试耗时较多，但也让我更深入理解了 \texttt{cmd.exe} 如何查找并启动外部程序。
+
+\subsection{存在的问题及解决办法}
+
+第一，\textbf{长 API 名称与中文路径兼容性}。部分环境对中文路径显示不够稳定，后续可考虑改用宽字符 API。第二，\textbf{后台任务与管道/重定向互斥}。当前 \texttt{\&} 后台模式不支持管道和重定向，已在代码中给出明确提示；后续可扩展为独立作业控制。第三，\textbf{仅支持单级管道}。多级管道如 \texttt{a | b | c} 尚未实现，可在 \texttt{parseShellInput()} 中扩展为多段管道链表。第四，\textbf{测试自动化不足}。目前以手工测试为主，后续可为 \texttt{CommandParser} 和 \texttt{CommandRegistry} 补充单元测试。
+
+\subsection{对实训任务的建议}
+
+建议在任务书中增加“外部命令执行”和“重定向/管道”作为选做加分项的明确说明，便于学生分阶段完成。实验环境可统一提供 Windows SDK 与 CMake 模板工程，减少环境配置时间。验收时可要求现场演示 \texttt{tasklist}、\texttt{taskkill} 和一条管道命令，并口头说明所用 Win32 API，以更好体现系统能力训练目标。
+
+% ======================
+% 五、参考文献
+% ======================
+\section{参考文献}
+
+\begin{enumerate}
+    \item Microsoft. \textit{Windows API documentation}[EB/OL]. \url{https://learn.microsoft.com/en-us/windows/win32/api/}.
+    \item Microsoft. \textit{File Management Functions}[EB/OL]. \url{https://learn.microsoft.com/en-us/windows/win32/fileio/file-management-functions}.
+    \item Microsoft. \textit{Tool Help Library}[EB/OL]. \url{https://learn.microsoft.com/en-us/windows/win32/toolhelp/tool-help-library}.
+    \item Microsoft. \textit{Process and Thread Functions}[EB/OL]. \url{https://learn.microsoft.com/en-us/windows/win32/procthread/process-and-thread-functions}.
+    \item 汤子瀛, 哲凤屏, 汤小丹. 计算机操作系统（第4版）[M]. 西安: 西安电子科技大学出版社.
+    \item 唐朔飞. 计算机组成原理（第3版）[M]. 北京: 高等教育出版社.
+\end{enumerate}
+
+\end{document}
