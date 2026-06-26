@@ -16,12 +16,14 @@ public:
 
 private:
     bool executeInput(const std::string& input);
+
     bool executeSingle(
         const std::string& input,
         const std::string* stdinText,
         std::string* capturedOutput,
         const std::string& outputFilePath,
         bool background = false);
+
     std::string expandAlias(const std::string& input) const;
 
     ShellContext context_;

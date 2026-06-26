@@ -2,7 +2,9 @@
 
 #include "commands/BuiltInCommands.h"
 #include "shell/CommandParser.h"
+#include "shell/ShellInputParser.h"
 #include "utils/ConsoleStyle.h"
+#include "utils/EnvUtils.h"
 #include "utils/PathUtils.h"
 #include "utils/StringUtils.h"
 
@@ -13,62 +15,6 @@
 #include <string>
 
 namespace {
-struct ShellInputPlan {
-    std::string leftCommand;
-    std::string rightCommand;
-    std::string outputFile;
-    bool background = false;
-};
-
-size_t findUnquoted(const std::string& input, char target) {
-    bool inQuotes = false;
-    for (size_t i = 0; i < input.size(); ++i) {
-        if (input[i] == '"') {
-            inQuotes = !inQuotes;
-            continue;
-        }
-        if (!inQuotes && input[i] == target) {
-            return i;
-        }
-    }
-    return std::string::npos;
-}
-
-std::string unquote(std::string value) {
-    value = trim(value);
-    if (value.size() >= 2 && value.front() == '"' && value.back() == '"') {
-        return value.substr(1, value.size() - 2);
-    }
-    return value;
-}
-
-ShellInputPlan parseShellInput(const std::string& input) {
-    ShellInputPlan plan;
-    std::string commandPart = input;
-
-    size_t backgroundPos = findUnquoted(commandPart, '&');
-    if (backgroundPos != std::string::npos && trim(commandPart.substr(backgroundPos + 1)).empty()) {
-        plan.background = true;
-        commandPart = trim(commandPart.substr(0, backgroundPos));
-    }
-
-    size_t redirectPos = findUnquoted(commandPart, '>');
-    if (redirectPos != std::string::npos) {
-        plan.outputFile = unquote(commandPart.substr(redirectPos + 1));
-        commandPart = trim(commandPart.substr(0, redirectPos));
-    }
-
-    size_t pipePos = findUnquoted(commandPart, '|');
-    if (pipePos != std::string::npos) {
-        plan.leftCommand = trim(commandPart.substr(0, pipePos));
-        plan.rightCommand = trim(commandPart.substr(pipePos + 1));
-    } else {
-        plan.leftCommand = trim(commandPart);
-    }
-
-    return plan;
-}
-
 std::string firstToken(const std::string& input, size_t& endPos) {
     size_t index = 0;
     while (index < input.size() && std::isspace(static_cast<unsigned char>(input[index]))) {
@@ -126,7 +72,7 @@ void Shell::run() {
         }
 
         context_.history.push_back(input);
-        executeInput(expandAlias(input));
+        executeInput(expandEnvironmentVariables(expandAlias(input)));
     }
 
     aliasStore_.save(context_.aliases);
@@ -135,24 +81,32 @@ void Shell::run() {
 
 bool Shell::executeInput(const std::string& input) {
     ShellInputPlan plan = parseShellInput(input);
-    if (plan.leftCommand.empty()) {
+    if (plan.pipeline.empty()) {
         return false;
     }
 
-    if (plan.background && (!plan.rightCommand.empty() || !plan.outputFile.empty())) {
+    if (plan.background && (plan.pipeline.size() > 1 || !plan.outputFile.empty())) {
         ConsoleStyle::writeError("Background mode does not support pipes or redirection yet.\n");
         return false;
     }
 
-    if (!plan.rightCommand.empty()) {
-        std::string pipeText;
-        if (!executeSingle(plan.leftCommand, nullptr, &pipeText, "")) {
-            return false;
+    std::string pipeText;
+    const std::string* stdinPtr = nullptr;
+
+    for (size_t i = 0; i < plan.pipeline.size(); ++i) {
+        const bool isLast = i + 1 == plan.pipeline.size();
+        if (!isLast) {
+            if (!executeSingle(plan.pipeline[i], stdinPtr, &pipeText, "")) {
+                return false;
+            }
+            stdinPtr = &pipeText;
+            continue;
         }
-        return executeSingle(plan.rightCommand, &pipeText, nullptr, plan.outputFile);
+
+        return executeSingle(plan.pipeline[i], stdinPtr, nullptr, plan.outputFile, plan.background);
     }
 
-    return executeSingle(plan.leftCommand, nullptr, nullptr, plan.outputFile, plan.background);
+    return true;
 }
 
 bool Shell::executeSingle(
@@ -162,9 +116,9 @@ bool Shell::executeSingle(
     const std::string& outputFilePath,
     bool background) {
     ParsedCommand command = parseCommand(input);
-    const CommandInfo* info = registry_.find(command.name);
+    const ICommand* cmd = registry_.find(command.name);
 
-    if (!info) {
+    if (!cmd) {
         ExternalRunOptions options;
         options.stdinText = stdinText;
         options.capturedOutput = capturedOutput;
@@ -176,6 +130,12 @@ bool Shell::executeSingle(
     if (background) {
         ConsoleStyle::writeError("Background mode is only supported for external commands.\n");
         return false;
+    }
+
+    if (stdinText != nullptr && !stdinText->empty()) {
+        ConsoleStyle::writeError(
+            "Internal command '" + command.name + "' does not read piped input. "
+            "Use an external filter such as find, e.g. tasklist | find \"chrome\".\n");
     }
 
     std::streambuf* oldCout = nullptr;
@@ -193,7 +153,7 @@ bool Shell::executeSingle(
         oldCout = std::cout.rdbuf(outputFile.rdbuf());
     }
 
-    info->handler(context_, command.args);
+    cmd->execute(context_, command.args);
 
     if (oldCout) {
         std::cout.rdbuf(oldCout);

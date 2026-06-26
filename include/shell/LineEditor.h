@@ -12,5 +12,9 @@ public:
 
 private:
     std::string chooseRecentHistory(const std::string& input, const std::vector<std::string>& history) const;
-    void renderInput(const std::string& prompt, const std::string& input, const std::string& hint) const;
+    void renderInput(
+        const std::string& prompt,
+        const std::string& input,
+        const std::string& hint,
+        size_t cursorPos) const;
 };

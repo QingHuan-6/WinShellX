@@ -1,13 +1,15 @@
 @echo off
 cd /d "%~dp0"
-if not exist "WinShellX.exe" (
-    echo WinShellX.exe not found.
-    echo Please build it first with cl or CMake.
+
+set "EXE=build\Debug\WinShellX.exe"
+if not exist "%EXE%" (
+    echo WinShellX.exe not found at %EXE%
+    echo Please run build.bat first.
     pause
     exit /b 1
 )
 
-WinShellX.exe
+"%EXE%"
 echo.
 echo WinShellX has exited.
 pause
