@@ -59,3 +59,4 @@ inline int runAllTests() {
 
 void registerParserTests();
 void registerCommandTests();
+void registerResolverTests();

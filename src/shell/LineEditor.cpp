@@ -2,6 +2,7 @@
 
 #include "shell/CompletionProvider.h"
 #include "utils/ConsoleStyle.h"
+#include "utils/StringUtils.h"
 
 #include <windows.h>
 
@@ -23,8 +24,18 @@ constexpr WORD kHomeKey = VK_HOME;
 constexpr WORD kEndKey = VK_END;
 constexpr size_t kMaxChoices = 9;
 
+// 语法高亮颜色
+constexpr WORD kColorCommand = FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;   // 已知命令：青
+constexpr WORD kColorUnknown = FOREGROUND_RED | FOREGROUND_INTENSITY;                       // 未知命令：红
+constexpr WORD kColorOperator = FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY;    // | > & 等：紫
+constexpr WORD kColorQuoted = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;     // 引号字符串：黄
+
 bool startsWith(const std::string& value, const std::string& prefix) {
     return value.size() >= prefix.size() && value.compare(0, prefix.size(), prefix) == 0;
+}
+
+bool isOperatorChar(char ch) {
+    return ch == '|' || ch == '>' || ch == '&' || ch == '<';
 }
 
 void setColor(HANDLE console, WORD attributes) {
@@ -82,7 +93,7 @@ std::string LineEditor::readLine(
     std::string draftInput;
     size_t cursorPos = 0;
     int historyIndex = -1;
-    renderInput(prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+    renderInput(prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
 
     while (true) {
         INPUT_RECORD record;
@@ -109,7 +120,7 @@ std::string LineEditor::readLine(
                 --cursorPos;
             }
             renderInput(
-                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
             continue;
         }
 
@@ -118,21 +129,21 @@ std::string LineEditor::readLine(
                 ++cursorPos;
             }
             renderInput(
-                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
             continue;
         }
 
         if (key.wVirtualKeyCode == kHomeKey) {
             cursorPos = 0;
             renderInput(
-                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
             continue;
         }
 
         if (key.wVirtualKeyCode == kEndKey) {
             cursorPos = input.size();
             renderInput(
-                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
             continue;
         }
 
@@ -143,7 +154,7 @@ std::string LineEditor::readLine(
             }
             historyIndex = -1;
             renderInput(
-                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
             continue;
         }
 
@@ -153,7 +164,7 @@ std::string LineEditor::readLine(
             }
             historyIndex = -1;
             renderInput(
-                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
             continue;
         }
 
@@ -163,7 +174,7 @@ std::string LineEditor::readLine(
                 input = hint;
                 cursorPos = input.size();
                 historyIndex = -1;
-                renderInput(prompt, input, "", cursorPos);
+                renderInput(prompt, input, "", cursorPos, commandNames);
             }
             continue;
         }
@@ -180,7 +191,7 @@ std::string LineEditor::readLine(
                     cursorPos = input.size();
                 }
                 renderInput(
-                    prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+                    prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
             }
             continue;
         }
@@ -196,7 +207,7 @@ std::string LineEditor::readLine(
                 }
                 cursorPos = input.size();
                 renderInput(
-                    prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+                    prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
             }
             continue;
         }
@@ -209,7 +220,7 @@ std::string LineEditor::readLine(
                 historyIndex = -1;
             }
             renderInput(
-                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
             continue;
         }
 
@@ -219,7 +230,7 @@ std::string LineEditor::readLine(
             ++cursorPos;
             historyIndex = -1;
             renderInput(
-                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos);
+                prompt, input, completionHint(completionProvider, input, history, cursorPos), cursorPos, commandNames);
         }
     }
 }
@@ -265,7 +276,8 @@ void LineEditor::renderInput(
     const std::string& prompt,
     const std::string& input,
     const std::string& hint,
-    size_t cursorPos) const {
+    size_t cursorPos,
+    const std::vector<std::string>& commandNames) const {
     HANDLE outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_SCREEN_BUFFER_INFO info;
     WORD oldAttributes = 7;
@@ -287,7 +299,7 @@ void LineEditor::renderInput(
     }
 
     const SHORT inputStartCol = afterPrompt.dwCursorPosition.X;
-    std::cout << input;
+    writeHighlighted(input, commandNames, oldAttributes);
 
     if (!hint.empty() && hint.size() > input.size()) {
         setColor(outputHandle, FOREGROUND_INTENSITY);
@@ -299,4 +311,97 @@ void LineEditor::renderInput(
     COORD pos = {static_cast<SHORT>(inputStartCol + static_cast<SHORT>(safeCursor)), row};
     SetConsoleCursorPosition(outputHandle, pos);
     std::cout.flush();
+}
+
+void LineEditor::writeHighlighted(
+    const std::string& input,
+    const std::vector<std::string>& commandNames,
+    unsigned short defaultAttr) const {
+    HANDLE outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    auto writeRun = [&](const std::string& text, WORD attr) {
+        setColor(outputHandle, attr);
+        std::cout << text;
+    };
+
+    size_t i = 0;
+    // 前导空白
+    size_t start = i;
+    while (i < input.size() && std::isspace(static_cast<unsigned char>(input[i]))) {
+        ++i;
+    }
+    if (i > start) {
+        writeRun(input.substr(start, i - start), defaultAttr);
+    }
+    if (i >= input.size()) {
+        setColor(outputHandle, defaultAttr);
+        return;
+    }
+
+    // 首个 token：命令名（可能被引号包裹）
+    std::string commandToken;
+    if (input[i] == '"') {
+        size_t quoteStart = i;
+        ++i;
+        while (i < input.size() && input[i] != '"') {
+            ++i;
+        }
+        if (i < input.size()) {
+            ++i;
+        }
+        commandToken = input.substr(quoteStart, i - quoteStart);
+    } else {
+        size_t tokenStart = i;
+        while (i < input.size() && !std::isspace(static_cast<unsigned char>(input[i])) &&
+               !isOperatorChar(input[i])) {
+            ++i;
+        }
+        commandToken = input.substr(tokenStart, i - tokenStart);
+    }
+
+    std::string lowerCommand = toLower(commandToken);
+    bool known = false;
+    for (const std::string& name : commandNames) {
+        if (toLower(name) == lowerCommand) {
+            known = true;
+            break;
+        }
+    }
+    writeRun(commandToken, known ? kColorCommand : kColorUnknown);
+
+    // 剩余部分：操作符 / 引号字符串 / 普通文本
+    while (i < input.size()) {
+        char ch = input[i];
+        if (ch == '"') {
+            size_t quoteStart = i;
+            ++i;
+            while (i < input.size() && input[i] != '"') {
+                ++i;
+            }
+            if (i < input.size()) {
+                ++i;
+            }
+            writeRun(input.substr(quoteStart, i - quoteStart), kColorQuoted);
+        } else if (isOperatorChar(ch)) {
+            size_t opStart = i;
+            while (i < input.size() && isOperatorChar(input[i])) {
+                ++i;
+            }
+            writeRun(input.substr(opStart, i - opStart), kColorOperator);
+        } else if (std::isspace(static_cast<unsigned char>(ch))) {
+            size_t wsStart = i;
+            while (i < input.size() && std::isspace(static_cast<unsigned char>(input[i]))) {
+                ++i;
+            }
+            writeRun(input.substr(wsStart, i - wsStart), defaultAttr);
+        } else {
+            size_t textStart = i;
+            while (i < input.size() && !std::isspace(static_cast<unsigned char>(input[i])) &&
+                   !isOperatorChar(input[i]) && input[i] != '"') {
+                ++i;
+            }
+            writeRun(input.substr(textStart, i - textStart), defaultAttr);
+        }
+    }
+
+    setColor(outputHandle, defaultAttr);
 }

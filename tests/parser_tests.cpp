@@ -1,4 +1,5 @@
 #include "shell/CommandParser.h"
+#include "shell/CommandResolver.h"
 #include "shell/ShellInputParser.h"
 #include "utils/EnvUtils.h"
 #include "utils/StringUtils.h"
@@ -99,4 +100,31 @@ void registerParserTests() {
     RUN_TEST(testParseBackgroundFlag);
     RUN_TEST(testExpandUserProfile);
     RUN_TEST(testExpandPathContainsPercent);
+}
+
+namespace {
+void testResolveCmdExe() {
+    ResolvedCommand resolved;
+    EXPECT_TRUE(resolveCommand("cmd /c echo hi", resolved));
+    EXPECT_TRUE(!resolved.executablePath.empty());
+    EXPECT_EQ(resolved.arguments, "/c echo hi");
+    EXPECT_TRUE(!resolved.batchFile);
+}
+
+void testCommandNameFromLine() {
+    EXPECT_EQ(commandNameFromLine("notepad a.txt"), "notepad");
+    EXPECT_EQ(commandNameFromLine("  \"C:\\Program Files\\x.exe\" arg"),
+              "C:\\Program Files\\x.exe");
+}
+
+void testResolveAllFindsCmd() {
+    std::vector<std::string> paths = resolveAllExecutablePaths("cmd");
+    EXPECT_TRUE(!paths.empty());
+}
+}
+
+void registerResolverTests() {
+    RUN_TEST(testResolveCmdExe);
+    RUN_TEST(testCommandNameFromLine);
+    RUN_TEST(testResolveAllFindsCmd);
 }

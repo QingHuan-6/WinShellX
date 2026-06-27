@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(WINSHELLX_COMMON_SOURCES
     src/shell/CommandParser.cpp
+    src/shell/CommandResolver.cpp
     src/shell/ShellInputParser.cpp
     src/shell/CommandRegistry.cpp
     src/utils/StringUtils.cpp
@@ -28,15 +29,20 @@ add_executable(WinShellX
     src/commands/CdCommand.cpp
     src/commands/ClsCommand.cpp
     src/commands/DirCommand.cpp
+    src/commands/EchoCommand.cpp
     src/commands/ExitCommand.cpp
     src/commands/HelpCommand.cpp
     src/commands/HistoryCommand.cpp
+    src/commands/SetCommand.cpp
     src/commands/TaskKillCommand.cpp
     src/commands/TaskListCommand.cpp
+    src/commands/TypeCommand.cpp
     src/commands/UnaliasCommand.cpp
+    src/commands/WhereCommand.cpp
     src/utils/PathUtils.cpp
     src/utils/WinApiError.cpp
     src/utils/ConsoleStyle.cpp
+    src/utils/GitUtils.cpp
 )
 
 add_executable(WinShellX_tests

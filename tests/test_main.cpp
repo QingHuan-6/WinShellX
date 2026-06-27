@@ -3,5 +3,6 @@
 int main() {
     registerParserTests();
     registerCommandTests();
+    registerResolverTests();
     return runAllTests();
 }
