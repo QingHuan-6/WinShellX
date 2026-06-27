@@ -810,7 +810,6 @@ WinShellX 在 Windows 11 环境下使用 Visual Studio 与 CMake 构建，主要
     \end{table}
 \endgroup
 
-推荐答辩演示顺序：help $\rightarrow$ dir $\rightarrow$ cd .. $\rightarrow$ history $\rightarrow$ alias ll=dir $\rightarrow$ dir \textgreater{} out.txt $\rightarrow$ dir \textbar{} find "cpp" $\rightarrow$ tasklist $\rightarrow$ exit。
 
 \subsubsection{系统运行效果}
 \label{subsec:runtime_screenshots}
@@ -902,11 +901,11 @@ public:
 
 除面向对象设计外，WinShellX 在编码实现上还注重模块分工与错误处理，主要体现在以下三个方面。
 
-首先，程序将命令行的语法预处理与实际执行分离开来。\codeident{ShellInputParser} 负责识别管道、重定向和后台运行标记，\codeident{executeSingle} 则完成单条命令的分发与执行。两者各司其职，后续若需支持多级管道或更复杂的重定向规则，只需扩展解析模块，而不必改动命令执行的核心流程。
+程序将命令行的语法预处理与实际执行分离开来。\codeident{ShellInputParser} 负责识别管道、重定向和后台运行标记，\codeident{executeSingle} 则完成单条命令的分发与执行。两者各司其职，后续若需支持多级管道或更复杂的重定向规则，只需扩展解析模块，而不必改动命令执行的核心流程。
 
-其次，程序对 Win32 调用失败的情况做了统一封装。\codeident{getLastErrorMessage()} 将系统返回的错误码转换为可读文字，再经 \codeident{ConsoleStyle} 输出提示信息，避免各模块重复编写错误处理逻辑，也有利于用户根据提示快速定位问题。
+程序对 Win32 调用失败的情况做了统一封装。\codeident{getLastErrorMessage()} 将系统返回的错误码转换为可读文字，再经 \codeident{ConsoleStyle} 输出提示信息，避免各模块重复编写错误处理逻辑，也有利于用户根据提示快速定位问题。
 
-最后，历史记录、别名管理、行编辑补全与命令执行分别由独立模块实现，通过 \codeident{ShellContext} 或主控流程衔接。各模块边界清晰、耦合较低，既便于开发阶段单独修改和测试，也便于答辩时按功能逐项演示。
+历史记录、别名管理、行编辑补全与命令执行分别由独立模块实现，通过 \codeident{ShellContext} 或主控流程衔接。各模块边界清晰、耦合较低，既便于开发阶段单独修改和测试，也便于答辩时按功能逐项演示。
 
 % ======================
 % 四、实训小结
