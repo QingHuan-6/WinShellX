@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 
+class JobManager;
+class ShellExecutor;
+
 struct ShellContext {
     // 运行状态
     bool running = true;
@@ -15,4 +18,8 @@ struct ShellContext {
     std::map<std::string, std::string> aliases;
     // 别名文件路径
     std::string aliasFilePath;
+    // 后台作业管理器
+    JobManager* jobManager = nullptr;
+    // 脚本执行入口
+    ShellExecutor* executor = nullptr;
 };

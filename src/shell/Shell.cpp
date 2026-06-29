@@ -16,6 +16,13 @@
 #include <string>
 
 namespace {
+std::string quoteIfNeeded(const std::string& value) {
+    if (value.find_first_of(" \t") == std::string::npos) {
+        return value;
+    }
+    return "\"" + value + "\"";
+}
+
 std::string firstToken(const std::string& input, size_t& endPos) {
     /* 
     firstToken 获取第一个令牌
@@ -57,6 +64,8 @@ Shell::Shell() : aliasStore_(".winshellx_aliases"), historyStore_(".winshellx_hi
     context_.aliases = aliasStore_.load();
     context_.historyFilePath = historyStore_.filePath();
     context_.history = historyStore_.load();
+    context_.jobManager = &jobManager_;
+    context_.executor = this;
     registerBuiltInCommands(registry_);
 }
 
@@ -68,6 +77,7 @@ void Shell::run() {
     
     //循环显示当前目录和提示符，读取用户输入，执行命令
     while (context_.running) {
+        jobManager_.reapFinished();
         std::string dir = getCurrentDirectoryText();
         std::string branch = currentGitBranch(dir);
         std::string prompt = branch.empty() ? (dir + ">") : ("(" + branch + ")" + dir + ">");
@@ -92,6 +102,14 @@ void Shell::run() {
     historyStore_.save(context_.history);
 }
 
+bool Shell::executeScriptLine(const std::string& input) {
+    std::string line = trim(input);
+    if (line.empty()) {
+        return true;
+    }
+    return executeInput(expandEnvironmentVariables(expandAlias(line)));
+}
+
 bool Shell::executeInput(const std::string& input) {
     ShellInputPlan plan = parseShellInput(input);
 
@@ -100,9 +118,9 @@ bool Shell::executeInput(const std::string& input) {
         return false;
     }
 
-    //如果后台执行且管道大于1或输出文件不为空，则返回false,因为后台执行不支持管道和重定向
-    if (plan.background && (plan.pipeline.size() > 1 || !plan.outputFile.empty())) {
-        ConsoleStyle::writeError("Background mode does not support pipes or redirection yet.\n");
+    // 后台作业可以直接继承输出重定向；多段管道涉及多个进程生命周期，暂不纳入作业表。
+    if (plan.background && plan.pipeline.size() > 1) {
+        ConsoleStyle::writeError("Background mode does not support pipes yet.\n");
         return false;
     }
 
@@ -143,6 +161,10 @@ bool Shell::executeSingle(
         options.capturedOutput = capturedOutput;//标准输出
         options.outputFilePath = outputFilePath;//输出文件
         options.waitForExit = !background;
+        options.jobManager = context_.jobManager;
+        if (background && !outputFilePath.empty()) {
+            options.displayCommandLine = input + " > " + quoteIfNeeded(outputFilePath);
+        }
         return externalCommandRunner_.run(input, options);//运行外部命令
     }
 

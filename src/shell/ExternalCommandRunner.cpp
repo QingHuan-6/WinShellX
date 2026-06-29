@@ -1,6 +1,7 @@
 #include "shell/ExternalCommandRunner.h"
 
 #include "shell/CommandResolver.h"
+#include "shell/JobManager.h"
 #include "utils/ConsoleStyle.h"
 #include "utils/WinApiError.h"
 
@@ -231,8 +232,19 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
             reader.join();
         }
     } else {
-        ConsoleStyle::writeSuccess("Started background process, PID: " +
-                                   std::to_string(processInfo.dwProcessId) + "\n");
+        if (options.jobManager) {
+            int jobId = options.jobManager->add(
+                processInfo.hProcess,
+                processInfo.dwProcessId,
+                options.displayCommandLine.empty() ? commandLine : options.displayCommandLine);
+            ConsoleStyle::writeSuccess("Started job [" + std::to_string(jobId) +
+                                       "] PID " + std::to_string(processInfo.dwProcessId) +
+                                       ".\n");
+            processInfo.hProcess = nullptr;
+        } else {
+            ConsoleStyle::writeSuccess("Started background process, PID: " +
+                                       std::to_string(processInfo.dwProcessId) + "\n");
+        }
         if (reader.joinable()) {
             reader.detach();
         }
@@ -241,6 +253,6 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
     closeIfValid(stdoutRead);
     closeIfValid(stdinWrite);
     CloseHandle(processInfo.hThread);
-    CloseHandle(processInfo.hProcess);
+    closeIfValid(processInfo.hProcess);
     return true;
 }

@@ -2,11 +2,15 @@
 
 #include <string>
 
+class JobManager;
+
 struct ExternalRunOptions {
     const std::string* stdinText = nullptr;
     std::string* capturedOutput = nullptr;
     std::string outputFilePath;
     bool waitForExit = true;
+    JobManager* jobManager = nullptr;
+    std::string displayCommandLine;
 };
 
 class ExternalCommandRunner {

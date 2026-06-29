@@ -22,20 +22,32 @@ add_executable(WinShellX
     src/shell/CompletionProvider.cpp
     src/shell/ExternalCommandRunner.cpp
     src/shell/HistoryStore.cpp
+    src/shell/JobManager.cpp
     src/shell/LineEditor.cpp
     ${WINSHELLX_COMMON_SOURCES}
     src/commands/BuiltInCommands.cpp
     src/commands/AliasCommand.cpp
+    src/commands/BatCommand.cpp
     src/commands/CdCommand.cpp
     src/commands/ClsCommand.cpp
+    src/commands/CopyCommand.cpp
+    src/commands/DelCommand.cpp
     src/commands/DirCommand.cpp
     src/commands/EchoCommand.cpp
     src/commands/ExitCommand.cpp
+    src/commands/FgCommand.cpp
     src/commands/HelpCommand.cpp
     src/commands/HistoryCommand.cpp
+    src/commands/JobsCommand.cpp
+    src/commands/KillJobCommand.cpp
+    src/commands/MkdirCommand.cpp
+    src/commands/MoveCommand.cpp
+    src/commands/RenCommand.cpp
+    src/commands/RmdirCommand.cpp
     src/commands/SetCommand.cpp
     src/commands/TaskKillCommand.cpp
     src/commands/TaskListCommand.cpp
+    src/commands/TopCommand.cpp
     src/commands/TypeCommand.cpp
     src/commands/UnaliasCommand.cpp
     src/commands/WhereCommand.cpp
@@ -55,6 +67,8 @@ add_executable(WinShellX_tests
 
 target_include_directories(WinShellX PRIVATE include)
 target_include_directories(WinShellX_tests PRIVATE include tests)
+
+target_link_libraries(WinShellX PRIVATE Psapi)
 
 if(MSVC)
     target_compile_options(WinShellX PRIVATE /utf-8)
