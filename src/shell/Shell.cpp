@@ -1,6 +1,7 @@
 #include "shell/Shell.h"
 
 #include "commands/BuiltInCommands.h"
+#include "shell/ConsoleControl.h"
 #include "shell/CommandParser.h"
 #include "shell/ShellInputParser.h"
 #include "utils/ConsoleStyle.h"
@@ -60,6 +61,7 @@ std::string firstToken(const std::string& input, size_t& endPos) {
 }
 
 Shell::Shell() : aliasStore_(".winshellx_aliases"), historyStore_(".winshellx_history") {
+    ConsoleControl::install();
     context_.aliasFilePath = aliasStore_.filePath();
     context_.aliases = aliasStore_.load();
     context_.historyFilePath = historyStore_.filePath();
@@ -103,6 +105,7 @@ void Shell::run() {
 }
 
 bool Shell::executeScriptLine(const std::string& input) {
+    // bat 命令调用的入口：脚本行复用交互命令的别名展开、环境变量展开和执行调度。
     std::string line = trim(input);
     if (line.empty()) {
         return true;
@@ -111,6 +114,8 @@ bool Shell::executeScriptLine(const std::string& input) {
 }
 
 bool Shell::executeInput(const std::string& input) {
+
+    //解析用户输入
     ShellInputPlan plan = parseShellInput(input);
 
     //如果管道为空，则返回false,一般用户输入的至少有一个命令
@@ -131,9 +136,12 @@ bool Shell::executeInput(const std::string& input) {
         //如果当前命令不是最后一个命令，则执行当前命令并捕获输出
         const bool isLast = i + 1 == plan.pipeline.size();
         if (!isLast) {
+
+            //参数stdinPtr是标准输入，&pipeText是管道数据
             if (!executeSingle(plan.pipeline[i], stdinPtr, &pipeText, "")) {
                 return false;
             }
+            //将管道数据赋值给stdinPtr
             stdinPtr = &pipeText;
             continue;
         }
@@ -160,9 +168,10 @@ bool Shell::executeSingle(
         options.stdinText = stdinText;//标准输入
         options.capturedOutput = capturedOutput;//标准输出
         options.outputFilePath = outputFilePath;//输出文件
-        options.waitForExit = !background;
-        options.jobManager = context_.jobManager;
+        options.waitForExit = !background;//如果后台执行，则不等待退出
+        options.jobManager = context_.jobManager;//把作业管理器传递给外部命令
         if (background && !outputFilePath.empty()) {
+            // 实际执行命令已经去掉 > file，这里保留完整文本只用于 jobs 显示。
             options.displayCommandLine = input + " > " + quoteIfNeeded(outputFilePath);
         }
         return externalCommandRunner_.run(input, options);//运行外部命令

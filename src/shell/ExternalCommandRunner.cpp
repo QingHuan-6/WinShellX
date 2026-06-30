@@ -1,6 +1,7 @@
 #include "shell/ExternalCommandRunner.h"
 
 #include "shell/CommandResolver.h"
+#include "shell/ConsoleControl.h"
 #include "shell/JobManager.h"
 #include "utils/ConsoleStyle.h"
 #include "utils/WinApiError.h"
@@ -100,8 +101,10 @@ void closeIfValid(HANDLE& handle) {
 void appendFromPipe(HANDLE readHandle, std::string* output) {
     char buffer[4096];
     DWORD bytesRead = 0;
+    //读取管道数据
     while (ReadFile(readHandle, buffer, sizeof(buffer), &bytesRead, nullptr) && bytesRead > 0) {
         if (output) {
+            //将数据添加到输出中
             output->append(buffer, buffer + bytesRead);
         }
     }
@@ -109,27 +112,32 @@ void appendFromPipe(HANDLE readHandle, std::string* output) {
 }
 
 bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRunOptions& options) const {
+    //如果命令行是空，则返回false
     if (commandLine.empty()) {
         return false;
     }
-
+    //解析命令行
     ResolvedCommand resolved;
     if (!resolveCommand(commandLine, resolved)) {
         ConsoleStyle::writeError("'" + commandNameFromLine(commandLine)
                   + "' is not recognized as an internal or external command.\n");
         return false;
     }
-
+    //构建进程命令行
     std::string processCommandLine = buildProcessCommandLine(resolved);
+    //获取应用程序名称
     std::string applicationName = applicationNameFor(resolved);
+    //构建可变命令
     std::vector<char> mutableCommand(processCommandLine.begin(), processCommandLine.end());
     mutableCommand.push_back('\0');
 
+    //创建安全属性
     SECURITY_ATTRIBUTES securityAttributes;
     ZeroMemory(&securityAttributes, sizeof(securityAttributes));
     securityAttributes.nLength = sizeof(securityAttributes);
-    securityAttributes.bInheritHandle = TRUE;
+    securityAttributes.bInheritHandle = TRUE;//继承句柄
 
+    //创建句柄
     HANDLE stdinRead = nullptr;
     HANDLE stdinWrite = nullptr;
     HANDLE stdoutRead = nullptr;
@@ -137,10 +145,12 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
     HANDLE outputFile = nullptr;
 
     bool redirectInput = options.stdinText != nullptr;
-    bool captureOutput = options.capturedOutput != nullptr;
-    bool redirectOutputFile = !options.outputFilePath.empty();
+    bool captureOutput = options.capturedOutput != nullptr;//如果捕获输出不为空指针，代表父进程要捕获输出
+    bool redirectOutputFile = !options.outputFilePath.empty();//重定向输出文件
 
+    //如果重定向输入(如sort < input.txt)，则创建匿名管道
     if (redirectInput) {
+        // 管道左侧输出作为右侧标准输入时，用匿名管道把文本写给子进程 stdin。
         if (!CreatePipe(&stdinRead, &stdinWrite, &securityAttributes, 0)) {
             ConsoleStyle::writeError("CreatePipe failed: " + getLastErrorMessage() + "\n");
             return false;
@@ -148,7 +158,9 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
         SetHandleInformation(stdinWrite, HANDLE_FLAG_INHERIT, 0);
     }
 
+    //如果捕获输出，则创建匿名管道
     if (captureOutput) {
+        // 管道或内部捕获需要拦截子进程 stdout/stderr，读端留给父进程读取。
         if (!CreatePipe(&stdoutRead, &stdoutWrite, &securityAttributes, 0)) {
             ConsoleStyle::writeError("CreatePipe failed: " + getLastErrorMessage() + "\n");
             closeIfValid(stdinRead);
@@ -156,7 +168,10 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
             return false;
         }
         SetHandleInformation(stdoutRead, HANDLE_FLAG_INHERIT, 0);
-    } else if (redirectOutputFile) {
+    } 
+    //如果重定向输出文件，则创建文件
+    else if (redirectOutputFile) {
+        // 支持外部命令 > file；后台作业也可以继承这个输出文件句柄。
         outputFile = CreateFileA(
             options.outputFilePath.c_str(),
             GENERIC_WRITE,
@@ -172,21 +187,26 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
             return false;
         }
     }
-
+    //创建启动信息
     STARTUPINFOA startupInfo;
     PROCESS_INFORMATION processInfo;
     ZeroMemory(&startupInfo, sizeof(startupInfo));
     ZeroMemory(&processInfo, sizeof(processInfo));
     startupInfo.cb = sizeof(startupInfo);
     if (redirectInput || captureOutput || redirectOutputFile) {
+        // STARTF_USESTDHANDLES 让 CreateProcess 使用我们准备好的 stdin/stdout/stderr。
         startupInfo.dwFlags |= STARTF_USESTDHANDLES;
+        //如果重定向输入，则使用stdinRead,否则使用标准输入
         startupInfo.hStdInput = redirectInput ? stdinRead : GetStdHandle(STD_INPUT_HANDLE);
+        //如果捕获输出，则使用stdoutWrite
         startupInfo.hStdOutput = captureOutput ? stdoutWrite
+                            //如果重定向输出文件，则使用outputFile
                             : redirectOutputFile ? outputFile
                                                  : GetStdHandle(STD_OUTPUT_HANDLE);
         startupInfo.hStdError = startupInfo.hStdOutput;
     }
 
+    //创建进程，运行外部命令（其中已经包含重定向输入、捕获输出、重定向输出文件）
     BOOL created = CreateProcessA(
         applicationName.c_str(),
         mutableCommand.data(),
@@ -199,6 +219,7 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
         &startupInfo,
         &processInfo);
 
+    //如果创建进程失败，则关闭句柄
     if (!created) {
         ConsoleStyle::writeError("Failed to start external program: "
                   + resolved.executablePath + "\n");
@@ -215,11 +236,16 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
     closeIfValid(stdoutWrite);
     closeIfValid(outputFile);
 
+    //创建线程
     std::thread reader;
+    //如果捕获输出，则这样创建线程
     if (captureOutput) {
+        //创建线程，参数为stdoutRead和options.capturedOutput
+        //作用是读取管道数据，并添加到options.capturedOutput中
         reader = std::thread(appendFromPipe, stdoutRead, options.capturedOutput);
     }
 
+    //如果重定向输入，则写入数据
     if (redirectInput && options.stdinText) {
         DWORD bytesWritten = 0;
         WriteFile(stdinWrite, options.stdinText->data(), static_cast<DWORD>(options.stdinText->size()), &bytesWritten, nullptr);
@@ -227,12 +253,30 @@ bool ExternalCommandRunner::run(const std::string& commandLine, const ExternalRu
     }
 
     if (options.waitForExit) {
-        WaitForSingleObject(processInfo.hProcess, INFINITE);
+        // 前台等待：登记子进程句柄并用短超时轮询，以便 Ctrl+C 中断时能及时收尾。
+        ConsoleControl::setForegroundProcess(processInfo.hProcess);
+        ConsoleControl::resetInterrupt();
+        for (;;) {
+            if (WaitForSingleObject(processInfo.hProcess, 100) == WAIT_OBJECT_0) {
+                break;
+            }
+            if (ConsoleControl::interrupted()) {
+                // Ctrl+C 已同时投递给子进程，给它一点时间自行退出；仍未退出则强杀。
+                if (WaitForSingleObject(processInfo.hProcess, 500) != WAIT_OBJECT_0) {
+                    TerminateProcess(processInfo.hProcess, 1);
+                    WaitForSingleObject(processInfo.hProcess, 500);
+                }
+                std::cout << "^C\n";
+                break;
+            }
+        }
+        ConsoleControl::clearForegroundProcess();
         if (reader.joinable()) {
             reader.join();
         }
     } else {
         if (options.jobManager) {
+            // 后台模式下进程句柄移交给 JobManager，不能在这里关闭，否则 jobs/fg/killjob 失效。
             int jobId = options.jobManager->add(
                 processInfo.hProcess,
                 processInfo.dwProcessId,

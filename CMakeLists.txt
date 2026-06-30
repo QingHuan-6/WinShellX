@@ -24,6 +24,7 @@ add_executable(WinShellX
     src/shell/HistoryStore.cpp
     src/shell/JobManager.cpp
     src/shell/LineEditor.cpp
+    src/shell/ConsoleControl.cpp
     ${WINSHELLX_COMMON_SOURCES}
     src/commands/BuiltInCommands.cpp
     src/commands/AliasCommand.cpp

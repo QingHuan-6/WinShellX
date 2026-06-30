@@ -85,7 +85,9 @@ std::string LineEditor::readLine(
     }
 
     DWORD rawMode = oldMode;
-    rawMode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+    // 关闭行输入、回显与 Ctrl+C 信号处理：把 Ctrl+C 作为普通按键事件读出来自行处理，
+    // 避免它在编辑期间触发系统默认处理而终止 WinShellX。
+    rawMode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT);
     SetConsoleMode(inputHandle, rawMode);
 
     CompletionProvider completionProvider(commandNames);
@@ -108,6 +110,14 @@ std::string LineEditor::readLine(
         }
 
         KEY_EVENT_RECORD key = record.Event.KeyEvent;
+
+        // Ctrl+C：取消当前输入行，回到新提示符。
+        bool ctrlPressed = (key.dwControlKeyState & (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED)) != 0;
+        if (key.uChar.AsciiChar == 0x03 || (ctrlPressed && (key.wVirtualKeyCode == 'C'))) {
+            SetConsoleMode(inputHandle, oldMode);
+            std::cout << "^C\n";
+            return "";
+        }
 
         if (key.wVirtualKeyCode == kEnterKey) {
             std::cout << "\n";
