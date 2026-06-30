@@ -1,5 +1,6 @@
 #include "commands/TopCommand.h"
 
+#include "shell/ConsoleControl.h"
 #include "utils/ConsoleStyle.h"
 #include "utils/StringUtils.h"
 #include "utils/WinApiError.h"
@@ -11,9 +12,8 @@
 #include <conio.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cctype>
-#include <cstdint>
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -33,11 +33,12 @@ enum class SortMode {
 
 struct TopOptions {
     int rows = 20;
-    int delayMs = 1000;
+    int delayMs = 100;
     SortMode sort = SortMode::Cpu;
     bool once = false;
 };
 
+//定义了一个进程的样本，包含了进程的ID，父进程ID，线程数，进程名称，进程时间，工作集
 struct ProcessSample {
     DWORD pid = 0;
     DWORD parentPid = 0;
@@ -47,6 +48,7 @@ struct ProcessSample {
     SIZE_T workingSet = 0;
 };
 
+//定义了一个进程的行，包含了进程的ID，父进程ID，线程数，进程名称，工作集，CPU百分比
 struct ProcessRow {
     DWORD pid = 0;
     DWORD parentPid = 0;
@@ -56,6 +58,7 @@ struct ProcessRow {
     double cpuPercent = 0.0;
 };
 
+// FILETIME 是 100ns 为单位的高低 32 位结构，转成整数便于做差值采样。
 ULONGLONG fileTimeToUInt64(const FILETIME& value) {
     ULARGE_INTEGER integer;
     integer.LowPart = value.dwLowDateTime;
@@ -95,15 +98,35 @@ SIZE_T workingSetFor(HANDLE process) {
     return counters.WorkingSetSize;
 }
 
+std::string processImageName(const PROCESSENTRY32& entry) {
+#if defined(UNICODE)
+    int bytes = WideCharToMultiByte(CP_UTF8, 0, entry.szExeFile, -1, nullptr, 0, nullptr, nullptr);
+    if (bytes <= 0) {
+        return std::string();
+    }
+    std::string name(static_cast<size_t>(bytes - 1), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, entry.szExeFile, -1, name.data(), bytes, nullptr, nullptr);
+    return name;
+#else
+    return entry.szExeFile;
+#endif
+}
+
 std::map<DWORD, ProcessSample> collectSamples() {
+    // 进程列表来自 Toolhelp 快照；CPU 时间和内存占用需要对每个进程再 OpenProcess 查询。
     std::map<DWORD, ProcessSample> samples;
+
+    //创建一个进程快照
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (snapshot == INVALID_HANDLE_VALUE) {
         return samples;
     }
 
+    //创建一个进程条目
     PROCESSENTRY32 entry;
     entry.dwSize = sizeof(PROCESSENTRY32);
+
+    //获取第一个进程
     if (!Process32First(snapshot, &entry)) {
         CloseHandle(snapshot);
         return samples;
@@ -114,8 +137,9 @@ std::map<DWORD, ProcessSample> collectSamples() {
         sample.pid = entry.th32ProcessID;
         sample.parentPid = entry.th32ParentProcessID;
         sample.threads = entry.cntThreads;
-        sample.name = entry.szExeFile;
+        sample.name = processImageName(entry);
 
+        //打开进程，获取进程的CPU时间和工作集
         HANDLE process = OpenProcess(
             PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ,
             FALSE,
@@ -248,6 +272,7 @@ std::vector<ProcessRow> buildRows(
         auto previous = before.find(current.pid);
         if (previous != before.end() && systemDelta > 0 &&
             current.processTime >= previous->second.processTime) {
+            // CPU% = 进程 CPU 时间增量 / 系统 CPU 时间增量。top 必须两次采样才能得到占用率。
             ULONGLONG processDelta = current.processTime - previous->second.processTime;
             row.cpuPercent = static_cast<double>(processDelta) * 100.0 /
                              static_cast<double>(systemDelta);
@@ -290,6 +315,7 @@ void sortRows(std::vector<ProcessRow>& rows, SortMode sort) {
 }
 
 void clearConsole() {
+    // 交互 top 不滚屏，而是清空缓冲区并把光标放回左上角刷新表格。
     HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_SCREEN_BUFFER_INFO info;
     if (!GetConsoleScreenBufferInfo(output, &info)) {
@@ -341,6 +367,7 @@ void printRows(const std::vector<ProcessRow>& rows, const TopOptions& options) {
 }
 
 bool handleKey(TopOptions& options) {
+    // _kbhit/_getch 非阻塞读取按键：刷新周期内可以随时切换排序或按 q 退出。
     if (!_kbhit()) {
         return true;
     }
@@ -370,6 +397,19 @@ bool handleKey(TopOptions& options) {
     }
     return true;
 }
+
+// 分段 sleep，每 100ms 检查一次 Ctrl+C，避免长 delay 期间无法中断。
+bool sleepInterruptible(int delayMs) {
+    while (delayMs > 0) {
+        if (ConsoleControl::interrupted()) {
+            return false;
+        }
+        int chunk = (std::min)(delayMs, 100);
+        std::this_thread::sleep_for(std::chrono::milliseconds(chunk));
+        delayMs -= chunk;
+    }
+    return true;
+}
 }
 
 std::string TopCommand::name() const { return "top"; }
@@ -382,6 +422,7 @@ void TopCommand::execute(ShellContext&, const std::vector<std::string>& args) co
         return;
     }
 
+    // 第一次采样只作为基线；延迟一个周期后再采样，才能计算 CPU 时间差。
     std::map<DWORD, ProcessSample> previous = collectSamples();
     ULONGLONG previousSystem = systemTime();
 
@@ -390,10 +431,15 @@ void TopCommand::execute(ShellContext&, const std::vector<std::string>& args) co
         return;
     }
 
+    ConsoleControl::resetInterrupt();
     bool running = true;
     while (running) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(options.delayMs));
+        if (!sleepInterruptible(options.delayMs)) {
+            std::cout << "^C\n";
+            break;
+        }
 
+        // 第二次及后续采样用于生成当前屏幕的进程行。
         std::map<DWORD, ProcessSample> current = collectSamples();
         ULONGLONG currentSystem = systemTime();
         ULONGLONG systemDelta = currentSystem >= previousSystem ? currentSystem - previousSystem : 0;
@@ -406,12 +452,17 @@ void TopCommand::execute(ShellContext&, const std::vector<std::string>& args) co
         }
         printRows(rows, options);
 
+        //如果只执行一次，则退出循环
         if (options.once) {
             break;
         }
 
         previous = std::move(current);
         previousSystem = currentSystem;
+        if (ConsoleControl::interrupted()) {
+            std::cout << "^C\n";
+            break;
+        }
         running = handleKey(options);
     }
 }
